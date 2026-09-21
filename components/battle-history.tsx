@@ -1,22 +1,29 @@
 "use client"
 
+import { useState } from "react"
 import useSWR from "swr"
 import { Check, Download, History, LockKeyhole } from "lucide-react"
 import type { BattleHistoryItem } from "@/lib/types"
 import { formatBRL } from "@/lib/format"
+import { PasswordDialog } from "@/components/password-dialog"
 
 const fetcher = (url: string) => fetch(url).then((response) => response.json())
 
 export function BattleHistory({ refreshKey = 0 }: { refreshKey?: number }) {
+  const [adminAction, setAdminAction] = useState<
+    | { type: "export"; battleId?: string }
+    | { type: "payment"; paymentId: string; paid: boolean }
+    | null
+  >(null)
+  const [adminError, setAdminError] = useState<string | null>(null)
+  const [adminBusy, setAdminBusy] = useState(false)
   const { data, mutate, isLoading } = useSWR<{ history: BattleHistoryItem[]; error?: string }>(
     `/api/history?refresh=${refreshKey}`,
     fetcher,
   )
   const history = data?.history ?? []
 
-  async function exportPayments(battleId?: string) {
-    const password = window.prompt("Digite a senha para exportar os pagamentos:")
-    if (!password) return
+  async function exportPayments(password: string, battleId?: string) {
     const response = await fetch("/api/history/export", {
       method: "POST",
       headers: { "content-type": "application/json", "x-export-password": password },
@@ -24,8 +31,7 @@ export function BattleHistory({ refreshKey = 0 }: { refreshKey?: number }) {
     })
     if (!response.ok) {
       const result = (await response.json().catch(() => ({}))) as { error?: string }
-      window.alert(result.error ?? "Senha incorreta ou erro na exportação")
-      return
+      throw new Error(result.error ?? "Senha incorreta ou erro na exportação")
     }
     const blob = await response.blob()
     const url = URL.createObjectURL(blob)
@@ -36,17 +42,38 @@ export function BattleHistory({ refreshKey = 0 }: { refreshKey?: number }) {
     URL.revokeObjectURL(url)
   }
 
-  async function markPaid(paymentId: string, paid: boolean) {
-    const password = window.prompt("Digite a senha administrativa:")
-    if (!password) return
+  async function markPaid(password: string, paymentId: string, paid: boolean) {
     const response = await fetch("/api/history/payments", {
       method: "PATCH",
       headers: { "content-type": "application/json", "x-export-password": password },
       body: JSON.stringify({ paymentId, paid }),
     })
     const result = (await response.json()) as { error?: string }
-    if (!response.ok) return window.alert(result.error ?? "Não foi possível atualizar")
+    if (!response.ok) throw new Error(result.error ?? "Não foi possível atualizar")
     await mutate()
+  }
+
+  async function confirmAdminAction(password: string) {
+    if (!adminAction) return
+    setAdminBusy(true)
+    setAdminError(null)
+    try {
+      if (adminAction.type === "export") {
+        await exportPayments(password, adminAction.battleId)
+      } else {
+        await markPaid(password, adminAction.paymentId, adminAction.paid)
+      }
+      setAdminAction(null)
+    } catch (error) {
+      setAdminError(error instanceof Error ? error.message : "Não foi possível concluir")
+    } finally {
+      setAdminBusy(false)
+    }
+  }
+
+  function requestAdminAction(action: NonNullable<typeof adminAction>) {
+    setAdminError(null)
+    setAdminAction(action)
   }
 
   return (
@@ -61,7 +88,7 @@ export function BattleHistory({ refreshKey = 0 }: { refreshKey?: number }) {
         </div>
         <button
           type="button"
-          onClick={() => exportPayments()}
+          onClick={() => requestAdminAction({ type: "export" })}
           className="inline-flex h-10 items-center gap-2 rounded-xl bg-secondary px-4 text-xs font-bold text-secondary-foreground"
         >
           <LockKeyhole className="size-4" /> <Download className="size-4" /> Exportar tudo
@@ -86,7 +113,7 @@ export function BattleHistory({ refreshKey = 0 }: { refreshKey?: number }) {
                     {new Date(battle.closedAt).toLocaleString("pt-BR")} · {paid}/{battle.payments.length} pagos
                   </p>
                 </div>
-                <button type="button" onClick={() => exportPayments(battle.id)} className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-bold ring-1 ring-border">
+                <button type="button" onClick={() => requestAdminAction({ type: "export", battleId: battle.id })} className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-bold ring-1 ring-border">
                   <Download className="size-3.5" /> Exportar
                 </button>
               </div>
@@ -109,7 +136,7 @@ export function BattleHistory({ refreshKey = 0 }: { refreshKey?: number }) {
                         <td className="p-2 font-bold text-emerald-400">{formatBRL(payment.prize)}</td>
                         <td className="p-2">{payment.status === "PAID" ? "Pago" : "Pendente"}</td>
                         <td className="p-2 text-right">
-                          <button type="button" onClick={() => markPaid(payment.id, payment.status !== "PAID")} className="inline-flex items-center gap-1 rounded-lg px-2 py-1 ring-1 ring-border">
+                          <button type="button" onClick={() => requestAdminAction({ type: "payment", paymentId: payment.id, paid: payment.status !== "PAID" })} className="inline-flex items-center gap-1 rounded-lg px-2 py-1 ring-1 ring-border">
                             <Check className="size-3" /> {payment.status === "PAID" ? "Desfazer" : "Marcar pago"}
                           </button>
                         </td>
@@ -122,6 +149,17 @@ export function BattleHistory({ refreshKey = 0 }: { refreshKey?: number }) {
           )
         })}
       </div>
+      <PasswordDialog
+        open={adminAction !== null}
+        title={adminAction?.type === "export" ? "Exportar pagamentos" : "Atualizar pagamento"}
+        description={adminAction?.type === "export" ? "Digite a senha para baixar os dados protegidos." : "Digite a senha para alterar o status do pagamento."}
+        error={adminError}
+        busy={adminBusy}
+        onConfirm={confirmAdminAction}
+        onClose={() => {
+          if (!adminBusy) setAdminAction(null)
+        }}
+      />
     </section>
   )
 }

@@ -12,8 +12,8 @@ type D1Database = {
   batch: (statements: D1Statement[]) => Promise<D1Result[]>
 }
 
-const SCHEMA = `
-CREATE TABLE IF NOT EXISTS battles (
+const SCHEMA = [
+  `CREATE TABLE IF NOT EXISTS battles (
   id TEXT PRIMARY KEY,
   group_id TEXT NOT NULL,
   group_name TEXT NOT NULL,
@@ -26,8 +26,8 @@ CREATE TABLE IF NOT EXISTS battles (
   winner_count INTEGER NOT NULL,
   prize_per_ticket REAL NOT NULL,
   closed_at TEXT NOT NULL
-);
-CREATE TABLE IF NOT EXISTS payouts (
+)`,
+  `CREATE TABLE IF NOT EXISTS payouts (
   id TEXT PRIMARY KEY,
   battle_id TEXT NOT NULL,
   participant_id TEXT NOT NULL,
@@ -38,15 +38,19 @@ CREATE TABLE IF NOT EXISTS payouts (
   fields_json TEXT NOT NULL DEFAULT '[]',
   paid_at TEXT,
   FOREIGN KEY (battle_id) REFERENCES battles(id)
-);
-CREATE INDEX IF NOT EXISTS idx_payouts_battle ON payouts(battle_id);
-`
+)`,
+  `CREATE INDEX IF NOT EXISTS idx_payouts_battle ON payouts(battle_id)`,
+]
 
 export async function getDb(): Promise<D1Database> {
   const { env } = await import("cloudflare:workers")
   const db = (env as unknown as { DB?: D1Database }).DB
   if (!db) throw new Error("Banco D1 ainda não configurado no Cloudflare")
-  await db.exec(SCHEMA)
+  // O D1 pode interpretar incorretamente blocos com vários comandos no `exec`.
+  // Executar cada instrução separadamente evita o erro "incomplete input".
+  for (const statement of SCHEMA) {
+    await db.prepare(statement).run()
+  }
   return db
 }
 

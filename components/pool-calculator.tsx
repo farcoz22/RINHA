@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import { Calculator, CheckCircle2, Percent, Save, Trophy } from "lucide-react"
 import type { BattleGroup, Participant } from "@/lib/types"
 import { formatBRL } from "@/lib/format"
+import { PasswordDialog } from "@/components/password-dialog"
 
 const FEE_RATE = 0.15
 
@@ -30,6 +31,12 @@ export function PoolCalculator({
   const [state, setState] = useState<PoolState>({})
   const [savingGroup, setSavingGroup] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
+  const [adminError, setAdminError] = useState<string | null>(null)
+  const [pendingSave, setPendingSave] = useState<{
+    groupId: string
+    winnerId: string
+    grossPool: number
+  } | null>(null)
 
   useEffect(() => {
     try {
@@ -76,11 +83,12 @@ export function PoolCalculator({
     }))
   }
 
-  async function saveBattle(groupId: string, winnerId: string, grossPool: number) {
-    const password = window.prompt("Digite a senha administrativa para salvar esta rinha:")
-    if (!password) return
+  async function saveBattle(password: string) {
+    if (!pendingSave) return
+    const { groupId, winnerId, grossPool } = pendingSave
     setSavingGroup(groupId)
     setMessage(null)
+    setAdminError(null)
     try {
       const response = await fetch("/api/history", {
         method: "POST",
@@ -96,8 +104,9 @@ export function PoolCalculator({
         return next
       })
       onSaved?.()
+      setPendingSave(null)
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Erro ao salvar rinha")
+      setAdminError(error instanceof Error ? error.message : "Erro ao salvar rinha")
     } finally {
       setSavingGroup(null)
     }
@@ -222,7 +231,11 @@ export function PoolCalculator({
               <button
                 type="button"
                 disabled={!winner || grossPool <= 0 || winnersCount === 0 || savingGroup === group.id}
-                onClick={() => winner && saveBattle(group.id, winner.id, grossPool)}
+                onClick={() => {
+                  if (!winner) return
+                  setAdminError(null)
+                  setPendingSave({ groupId: group.id, winnerId: winner.id, grossPool })
+                }}
                 className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <Save className="size-4" />
@@ -232,6 +245,17 @@ export function PoolCalculator({
           )
         })}
       </div>
+      <PasswordDialog
+        open={pendingSave !== null}
+        title="Finalizar e salvar rinha"
+        description="Confirme a senha administrativa para registrar o resultado e os pagamentos."
+        error={adminError}
+        busy={savingGroup !== null}
+        onConfirm={saveBattle}
+        onClose={() => {
+          if (!savingGroup) setPendingSave(null)
+        }}
+      />
     </section>
   )
 }
