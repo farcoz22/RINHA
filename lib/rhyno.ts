@@ -21,6 +21,8 @@ export interface QueueField {
   fieldKey: string
   label: string
   required: boolean
+  sensitive?: boolean | string | number
+  isSensitive?: boolean | string | number
 }
 
 export interface QueueEvent {
@@ -40,7 +42,8 @@ export interface QueueEvent {
 export interface QueueEntryFieldValue {
   label: string
   value: string
-  sensitive: boolean
+  sensitive?: boolean | string | number
+  isSensitive?: boolean | string | number
 }
 
 export interface QueueEntry {

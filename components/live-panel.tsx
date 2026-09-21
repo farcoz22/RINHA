@@ -150,10 +150,10 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
               <Outcome number={2} label="Pessoa" value={selectedPerson?.username} hint={selectedTeam && teamPeople.length === 1 ? "Única pessoa da equipe" : undefined} />
               <Outcome number={3} label="Jogo" value={selectedGame?.label} detail={gameDescription && gameDescription !== selectedGame?.label ? gameDescription : undefined} />
             </div>
-            {selectedPerson && selectedPerson.fields.some((field) => !field.sensitive && field.value?.trim()) && <>
+            {selectedPerson && selectedPerson.fields.some((field) => field.sensitive === false && field.value?.trim()) && <>
               <p className="mt-6 text-xs font-bold tracking-wide text-muted-foreground uppercase">Campos públicos preenchidos</p>
               <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                {selectedPerson.fields.filter((field) => !field.sensitive && field.value?.trim()).map((field, index) => (
+                {selectedPerson.fields.filter((field) => field.sensitive === false && field.value?.trim()).map((field, index) => (
                   <div key={`${field.label}-${index}`} className="min-w-0 rounded-xl bg-background/40 p-3">
                     <p className="text-[11px] text-muted-foreground">{field.label}</p>
                     <p className="break-words text-sm font-bold">{field.value}</p>
