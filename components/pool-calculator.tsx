@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { Calculator, CheckCircle2, Percent, Save, Trophy } from "lucide-react"
+import { Calculator, CheckCircle2, Save, Trophy, Wallet } from "lucide-react"
 import type { BattleGroup, Participant } from "@/lib/types"
 import { formatBRL } from "@/lib/format"
 import { PasswordDialog } from "@/components/password-dialog"
@@ -55,23 +55,27 @@ export function PoolCalculator({
     }
   }, [state])
 
-  const activeGroups = useMemo(
-    () => groups.filter((group) => group.events.length > 0),
-    [groups],
-  )
+  const activeGroups = useMemo(const entriesTotal = activeGroups.reduce(
+  (total, group) =>
+    total +
+    group.events.reduce(
+      (sum, event) => sum + event.minValue * event.occupiedEntries,
+      0,
+    ),
+  0,
+)
 
-  function updateReturn(groupId: string, eventId: string, value: string) {
-    setState((current) => ({
-      ...current,
-      [groupId]: {
-        winnerId: current[groupId]?.winnerId ?? "",
-        casinoReturns: {
-          ...(current[groupId]?.casinoReturns ?? {}),
-          [eventId]: value,
-        },
-      },
-    }))
-  }
+const returnsTotal = activeGroups.reduce(
+  (total, group) =>
+    total +
+    group.events.reduce(
+      (sum, event) =>
+        sum +
+        parseMoney(state[group.id]?.casinoReturns[event.id] ?? ""),
+      0,
+    ),
+  0,
+)
 
   function selectWinner(groupId: string, eventId: string) {
     setState((current) => ({
@@ -120,6 +124,29 @@ export function PoolCalculator({
       <h2 className="mt-1 text-2xl font-bold">Pote e premiação</h2>
       <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
         Informe em reais quanto cada aposta retornou do cassino e marque a equipe vencedora.
+        <div
+  className="mt-4 grid grid-cols-2 gap-2 lg:grid-cols-4"
+  aria-label="Resumo de todos os potes"
+>
+  <Result
+    label="Entradas nas filas"
+    value={formatBRL(entriesTotal)}
+  />
+  <Result
+    label="Pote bruto informado"
+    value={formatBRL(returnsTotal)}
+  />
+  <Result
+    label="Taxa total · 15%"
+    value={`− ${formatBRL(returnsTotal * FEE_RATE)}`}
+  />
+  <Result
+    label="Prêmios líquidos"
+    value={formatBRL(returnsTotal * (1 - FEE_RATE))}
+    highlight
+    icon={<Wallet className="size-3" />}
+  />
+</div>
         O sistema soma o pote, retira 15% e divide o prêmio entre os bilhetes da vencedora.
       </p>
       {message && (
@@ -170,6 +197,9 @@ export function PoolCalculator({
               <div className="mt-4 flex flex-col gap-2">
                 {group.events.map((event) => {
                   const selected = groupState?.winnerId === event.id
+              const ticketHolders = participants.filter(
+  (person) => person.eventId === event.id,
+)
                   return (
                     <div
                       key={event.id}
@@ -183,6 +213,27 @@ export function PoolCalculator({
                         <p className="text-xs text-muted-foreground">
                           {event.occupiedEntries} bilhete(s) · {formatBRL(event.minValue)} cada
                         </p>
+                        {group.id === "__solo__" && (
+  <div
+    className="mt-2 flex flex-wrap gap-1"
+    aria-label={`Pessoas com bilhetes em ${event.name}`}
+  >
+    {ticketHolders.map((person) => (
+      <span
+        key={person.id}
+        className="max-w-full break-all rounded-md border border-border bg-background/70 px-2 py-0.5 text-[11px] font-medium text-foreground"
+      >
+        {person.username}
+        {person.quantity > 1 ? ` ×${person.quantity}` : ""}
+      </span>
+    ))}
+    {ticketHolders.length === 0 && (
+      <span className="text-[11px] text-muted-foreground">
+        Nomes ainda não disponíveis
+      </span>
+    )}
+  </div>
+)}
                       </div>
 
                       <label className="relative block">
@@ -219,7 +270,7 @@ export function PoolCalculator({
 
               <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
                 <Result label="Pote bruto" value={formatBRL(grossPool)} />
-                <Result label="Taxa (15%)" value={`− ${formatBRL(fee)}`} icon={<Percent className="size-3" />} />
+                <Result label="Taxa (15%)" value={`− ${formatBRL(fee)}`} />
                 <Result label="Pote líquido" value={formatBRL(netPool)} highlight />
                 <Result
                   label={winnersCount > 0 ? `Por vencedor (${winnersCount})` : "Por vencedor"}
