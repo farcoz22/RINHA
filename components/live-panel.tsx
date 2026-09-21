@@ -9,6 +9,7 @@ import { Hero } from "@/components/hero"
 import { Roulette, type WheelName } from "@/components/roulette"
 import { BattleOrder } from "@/components/battle-order"
 import { Ranking } from "@/components/ranking"
+import { NuuhSpotlight } from "@/components/nuuh-spotlight"
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json() as Promise<LiveData>)
 
@@ -91,6 +92,7 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6">
       <SiteHeader />
+      <NuuhSpotlight />
 
       {live.error && (
         <div className="flex items-center gap-3 rounded-2xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
