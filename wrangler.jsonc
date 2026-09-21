@@ -10,5 +10,12 @@
     "directory": "dist/client",
     "not_found_handling": "none",
     "binding": "ASSETS"
-  }
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "rinha-historico",
+      "database_id": "8ac51edb-884c-463f-833b-f01d9b8ccd63"
+    }
+  ]
 }
