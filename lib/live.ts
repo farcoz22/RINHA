@@ -33,6 +33,18 @@ export async function getLiveData(): Promise<LiveData> {
   return inflight
 }
 
+/** Dados seguros para enviar ao navegador: campos sensíveis nunca saem do servidor. */
+export async function getPublicLiveData(): Promise<LiveData> {
+  const data = await getLiveData()
+  return {
+    ...data,
+    participants: data.participants.map((participant) => ({
+      ...participant,
+      fields: participant.fields.filter((field) => !field.sensitive),
+    })),
+  }
+}
+
 async function buildLiveData(): Promise<LiveData> {
   const events = await listQueueEvents()
 

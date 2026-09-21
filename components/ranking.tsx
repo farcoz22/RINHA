@@ -2,6 +2,7 @@ import type { BattleGroup, Participant, RecentDonation } from "@/lib/types"
 import { formatBRL, formatTime } from "@/lib/format"
 import { Swords, Users } from "lucide-react"
 import { PoolCalculator } from "@/components/pool-calculator"
+import { BattleHistory } from "@/components/battle-history"
 
 interface RankingProps {
   participants: Participant[]
@@ -24,11 +25,13 @@ const STATUS_STYLE: Record<RecentDonation["status"], string> = {
 }
 
 export function Ranking({ participants, battleGroups, donations }: RankingProps) {
+  const [historyRefresh, setHistoryRefresh] = useState(0)
   const top = [...participants].sort((a, b) => b.amount - a.amount).slice(0, 10)
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
-      <PoolCalculator groups={battleGroups} />
+      <PoolCalculator groups={battleGroups} participants={participants} onSaved={() => setHistoryRefresh((value) => value + 1)} />
+      <BattleHistory refreshKey={historyRefresh} />
       {/* Confrontos / filas */}
       <div className="rounded-3xl border border-border bg-card/60 p-6 backdrop-blur">
         <p className="flex items-center gap-2 text-xs font-semibold tracking-[0.3em] text-accent uppercase">
@@ -109,7 +112,18 @@ export function Ranking({ participants, battleGroups, donations }: RankingProps)
                   >
                     {i + 1}
                   </span>
-                  <p className="truncate text-sm font-semibold">{p.username}</p>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold">{p.username}</p>
+                    {p.fields.slice(0, 4).length > 0 && (
+                      <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
+                        {p.fields.slice(0, 4).map((field) => (
+                          <span key={`${p.id}-${field.label}`} className="text-[10px] text-muted-foreground">
+                            {field.label}: <strong className="text-foreground">{field.value}</strong>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <span className="shrink-0 text-xs font-bold text-accent">
                   {formatBRL(p.amount)}
@@ -164,3 +178,6 @@ export function Ranking({ participants, battleGroups, donations }: RankingProps)
     </div>
   )
 }
+"use client"
+
+import { useState } from "react"

@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server"
-import { getLiveData } from "@/lib/live"
+import { getPublicLiveData } from "@/lib/live"
 
 export const dynamic = "force-dynamic"
 
 export async function GET() {
   try {
-    const data = await getLiveData()
+    const data = await getPublicLiveData()
     return NextResponse.json(data, {
       headers: { "cache-control": "no-store" },
     })

@@ -1,5 +1,5 @@
 import { LivePanel } from "@/components/live-panel"
-import { getLiveData } from "@/lib/live"
+import { getPublicLiveData } from "@/lib/live"
 import type { LiveData } from "@/lib/types"
 
 export const dynamic = "force-dynamic"
@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic"
 export default async function Page() {
   let initialData: LiveData
   try {
-    initialData = await getLiveData()
+    initialData = await getPublicLiveData()
   } catch (err) {
     initialData = {
       updatedAt: new Date().toISOString(),

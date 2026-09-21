@@ -1,8 +1,8 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { Calculator, CheckCircle2, Percent, Trophy } from "lucide-react"
-import type { BattleGroup } from "@/lib/types"
+import { Calculator, CheckCircle2, Percent, Save, Trophy } from "lucide-react"
+import type { BattleGroup, Participant } from "@/lib/types"
 import { formatBRL } from "@/lib/format"
 
 const FEE_RATE = 0.15
@@ -18,8 +18,18 @@ function parseMoney(value: string) {
   return Number.isFinite(amount) && amount > 0 ? amount : 0
 }
 
-export function PoolCalculator({ groups }: { groups: BattleGroup[] }) {
+export function PoolCalculator({
+  groups,
+  participants,
+  onSaved,
+}: {
+  groups: BattleGroup[]
+  participants: Participant[]
+  onSaved?: () => void
+}) {
   const [state, setState] = useState<PoolState>({})
+  const [savingGroup, setSavingGroup] = useState<string | null>(null)
+  const [message, setMessage] = useState<string | null>(null)
 
   useEffect(() => {
     try {
@@ -66,6 +76,33 @@ export function PoolCalculator({ groups }: { groups: BattleGroup[] }) {
     }))
   }
 
+  async function saveBattle(groupId: string, winnerId: string, grossPool: number) {
+    const password = window.prompt("Digite a senha administrativa para salvar esta rinha:")
+    if (!password) return
+    setSavingGroup(groupId)
+    setMessage(null)
+    try {
+      const response = await fetch("/api/history", {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-export-password": password },
+        body: JSON.stringify({ groupId, winnerEventId: winnerId, grossPool }),
+      })
+      const result = (await response.json()) as { ok?: boolean; error?: string }
+      if (!response.ok) throw new Error(result.error ?? "Não foi possível salvar")
+      setMessage("Rinha salva no histórico com os pagamentos pendentes.")
+      setState((current) => {
+        const next = { ...current }
+        delete next[groupId]
+        return next
+      })
+      onSaved?.()
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Erro ao salvar rinha")
+    } finally {
+      setSavingGroup(null)
+    }
+  }
+
   return (
     <section className="rounded-3xl border border-border bg-card/60 p-6 backdrop-blur lg:col-span-2">
       <p className="flex items-center gap-2 text-xs font-semibold tracking-[0.3em] text-accent uppercase">
@@ -76,6 +113,11 @@ export function PoolCalculator({ groups }: { groups: BattleGroup[] }) {
         Informe em reais quanto cada aposta retornou do cassino e marque a equipe vencedora.
         O sistema soma o pote, retira 15% e divide o prêmio entre os bilhetes da vencedora.
       </p>
+      {message && (
+        <p className="mt-3 rounded-xl border border-border bg-background/50 px-4 py-3 text-sm">
+          {message}
+        </p>
+      )}
 
       <div className="mt-5 grid gap-5 xl:grid-cols-2">
         {activeGroups.length === 0 && (
@@ -95,7 +137,11 @@ export function PoolCalculator({ groups }: { groups: BattleGroup[] }) {
           const fee = grossPool * FEE_RATE
           const netPool = grossPool - fee
           const winner = group.events.find((event) => event.id === groupState?.winnerId)
-          const winnersCount = winner?.occupiedEntries ?? 0
+          const winnersCount = winner
+            ? participants
+                .filter((participant) => participant.eventId === winner.id)
+                .reduce((sum, participant) => sum + Math.max(1, participant.quantity), 0)
+            : 0
           const prizePerTicket = winnersCount > 0 ? netPool / winnersCount : 0
 
           return (
@@ -172,6 +218,16 @@ export function PoolCalculator({ groups }: { groups: BattleGroup[] }) {
                   highlight
                 />
               </div>
+
+              <button
+                type="button"
+                disabled={!winner || grossPool <= 0 || winnersCount === 0 || savingGroup === group.id}
+                onClick={() => winner && saveBattle(group.id, winner.id, grossPool)}
+                className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <Save className="size-4" />
+                {savingGroup === group.id ? "Salvando..." : "Finalizar e salvar rinha"}
+              </button>
             </article>
           )
         })}

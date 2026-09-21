@@ -52,3 +52,26 @@ export interface LiveData {
   recentDonations: RecentDonation[]
   error?: string
 }
+
+export interface BattleHistoryPayment {
+  id: string
+  username: string
+  quantity: number
+  prize: number
+  status: "PENDING" | "PAID"
+  paidAt: string | null
+}
+
+export interface BattleHistoryItem {
+  id: string
+  groupName: string
+  winnerEventName: string
+  entryTotal: number
+  grossPool: number
+  fee: number
+  netPool: number
+  winnerCount: number
+  prizePerTicket: number
+  closedAt: string
+  payments: BattleHistoryPayment[]
+}

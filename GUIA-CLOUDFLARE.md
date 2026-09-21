@@ -33,8 +33,35 @@ Depois que o Worker for criado:
 3. Abra **Variables and Secrets**.
 4. Adicione `RHYNO_CLIENT_ID` como **Secret**.
 5. Adicione `RHYNO_CLIENT_SECRET` como **Secret**.
-6. Salve sem colocar aspas ou o sinal `=` no nome.
-7. Abra **Deployments** e faça um novo deploy.
+6. Adicione `EXPORT_PASSWORD` como **Secret**. Essa será a senha usada para finalizar rinhas, exportar pagamentos e marcar ganhadores como pagos.
+7. Salve sem colocar aspas ou o sinal `=` no nome.
+
+## Histórico e pagamentos (D1)
+
+O histórico precisa de um banco D1 para continuar salvo depois de cada deploy:
+
+1. No painel do Cloudflare, abra **Storage & Databases** → **D1 SQL database**.
+2. Clique em **Create database**, use o nome `rinha-historico` e conclua.
+3. Copie o **Database ID** mostrado na página do banco.
+4. No arquivo `wrangler.jsonc`, adicione antes do último `}`:
+
+```jsonc
+"d1_databases": [
+  {
+    "binding": "DB",
+    "database_name": "rinha-historico",
+    "database_id": "COLE_AQUI_O_DATABASE_ID"
+  }
+]
+```
+
+5. Envie essa alteração ao GitHub. O Cloudflare fará um novo deploy automaticamente.
+
+Não é preciso criar tabelas manualmente: o aplicativo cria as tabelas de rinhas e pagamentos no primeiro acesso.
+
+## Novo deploy
+
+Depois de cadastrar os segredos e o D1, abra **Deployments** e faça um novo deploy. Alterações futuras enviadas à branch `main` também serão publicadas automaticamente.
 
 ## Configuração esperada
 
@@ -44,6 +71,8 @@ Depois que o Worker for criado:
 | Build command | `pnpm run build:vinext` |
 | Deploy command | `pnpm run deploy:vinext` |
 | Node.js | 20 ou superior |
+| D1 binding | `DB` |
+| Senha administrativa | `EXPORT_PASSWORD` (Secret) |
 
 O painel atualiza os dados a cada 60 segundos para reduzir o uso gratuito.
 
