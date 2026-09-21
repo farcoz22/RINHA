@@ -137,3 +137,20 @@
 .rhyno-live-dot {
   animation: rhyno-pulse 1.4s ease-in-out infinite;
 }
+@keyframes rank-enter {
+  from { opacity: 0.45; transform: translateY(8px); box-shadow: 0 0 0 transparent; }
+  50% { box-shadow: 0 0 20px oklch(0.83 0.16 82 / 0.28); }
+  to { opacity: 1; transform: translateY(0); box-shadow: 0 0 0 transparent; }
+}
+
+@keyframes rank-target {
+  from { transform: rotate(-50deg) scale(1.5); opacity: 0.4; }
+  to { transform: rotate(0) scale(1); opacity: 1; }
+}
+
+.rank-lead { animation: rank-enter 900ms ease-out both; }
+.rank-crosshair { animation: rank-target 750ms ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rank-lead, .rank-crosshair { animation: none; }
+}
