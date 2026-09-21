@@ -2,14 +2,14 @@ import type { LiveStats } from "@/lib/types"
 import { formatBRL, formatTime } from "@/lib/format"
 
 interface HeroProps {
+  selectedTeam: string | null
   selectedName: string | null
+  selectedGame: string | null
   stats: LiveStats
-  remaining: number
-  finished: number
   updatedAt: string
 }
 
-export function Hero({ selectedName, stats, remaining, finished, updatedAt }: HeroProps) {
+export function Hero({ selectedTeam, selectedName, selectedGame, stats, updatedAt }: HeroProps) {
   return (
     <section className="rounded-3xl border border-border bg-card/60 p-6 backdrop-blur sm:p-10">
       <div className="mx-auto max-w-3xl text-center">
@@ -20,7 +20,7 @@ export function Hero({ selectedName, stats, remaining, finished, updatedAt }: He
         <h1 className="mt-4 text-balance text-5xl font-extrabold tracking-tight sm:text-7xl">
           Batalhas do Nuuhzão
         </h1>
-        <p className="mt-3 text-muted-foreground">A roleta decide quem vai agora.</p>
+        <p className="mt-3 text-muted-foreground">Sorteie a equipe, a pessoa e o jogo da vez.</p>
 
         <div className="mt-6 flex items-center justify-center gap-3">
           <span className="inline-flex items-center gap-2 rounded-full bg-primary/20 px-3 py-1 text-xs font-bold text-primary ring-1 ring-primary/40">
@@ -33,21 +33,20 @@ export function Hero({ selectedName, stats, remaining, finished, updatedAt }: He
         </div>
 
         <div className="mt-6 rounded-2xl border border-border bg-background/50 p-6">
-          <p className="text-sm text-muted-foreground">Na vez agora</p>
+          <p className="text-sm text-muted-foreground">Resultado do sorteio</p>
           <p className="mt-1 text-balance text-3xl font-extrabold sm:text-4xl">
-            {selectedName ?? "Ninguém selecionado"}
+            {selectedName ?? selectedTeam ?? "Aguardando a roleta"}
           </p>
           <p className="mt-2 text-sm text-muted-foreground">
-            Quando a roleta girar, o nome vai aparecer aqui em destaque.
+            {[selectedTeam, selectedGame].filter(Boolean).join(" · ") || "Comece sorteando uma equipe."}
           </p>
         </div>
       </div>
 
-      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatCard label="Na roleta" value={String(remaining)} />
-        <StatCard label="Finalizados" value={String(finished)} />
+      <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <StatCard label="Participantes" value={String(stats.participants)} />
+        <StatCard label="Equipes" value={String(stats.events)} />
         <StatCard label="Total em entradas" value={formatBRL(stats.totalEntradas)} />
-        <StatCard label="Total em ganhos" value={formatBRL(stats.totalGanhos)} highlight />
       </div>
     </section>
   )
@@ -56,20 +55,14 @@ export function Hero({ selectedName, stats, remaining, finished, updatedAt }: He
 function StatCard({
   label,
   value,
-  highlight,
 }: {
   label: string
   value: string
-  highlight?: boolean
 }) {
   return (
     <div className="rounded-2xl border border-border bg-background/40 px-4 py-4 text-center">
       <p className="text-xs text-muted-foreground">{label}</p>
-      <p
-        className={
-          "mt-1 text-xl font-bold sm:text-2xl " + (highlight ? "text-accent" : "text-foreground")
-        }
-      >
+      <p className="mt-1 text-xl font-bold sm:text-2xl">
         {value}
       </p>
     </div>

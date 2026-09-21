@@ -2,224 +2,185 @@
 
 import { useMemo, useState } from "react"
 import useSWR from "swr"
-import { AlertTriangle, RefreshCw, RotateCcw, Trophy } from "lucide-react"
-import type { LiveData, Participant } from "@/lib/types"
+import { AlertTriangle, Check, RefreshCw, RotateCcw, Trophy } from "lucide-react"
+import type { LiveData } from "@/lib/types"
 import { SiteHeader } from "@/components/site-header"
 import { Hero } from "@/components/hero"
-import { Roulette, type WheelName } from "@/components/roulette"
-import { BattleOrder } from "@/components/battle-order"
+import { Roulette, type RouletteSound, type WheelChoice } from "@/components/roulette"
 import { Ranking } from "@/components/ranking"
 import { NuuhSpotlight } from "@/components/nuuh-spotlight"
+import { getGameDescription, getPublicGameChoices } from "@/lib/roulette-games"
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json() as Promise<LiveData>)
-
-const EMPTY: LiveData = {
-  updatedAt: new Date().toISOString(),
-  stats: {
-    participants: 0,
-    events: 0,
-    groups: 0,
-    totalEntradas: 0,
-    totalGanhos: 0,
-    paidDonations: 0,
-  },
-  participants: [],
-  battleGroups: [],
-  recentDonations: [],
-}
-
+const fetcher = (url: string) => fetch(url).then((response) => response.json() as Promise<LiveData>)
+type Stage = "team" | "person" | "game"
 type Tab = "ao-vivo" | "fila"
 
 export function LivePanel({ initialData }: { initialData: LiveData }) {
   const { data, mutate, isValidating } = useSWR<LiveData>("/api/live", fetcher, {
-    // Uma chamada a cada 10 minutos reduz o consumo; o operador pode atualizar manualmente.
     refreshInterval: 600_000,
     revalidateOnFocus: false,
     revalidateOnReconnect: false,
     fallbackData: initialData,
     keepPreviousData: true,
   })
-
-  const live = data ?? EMPTY
+  const live = data ?? initialData
   const [tab, setTab] = useState<Tab>("ao-vivo")
-  const [eliminatedIds, setEliminatedIds] = useState<string[]>([])
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [stage, setStage] = useState<Stage>("team")
+  const [groupId, setGroupId] = useState<string | null>(null)
+  const [teamId, setTeamId] = useState<string | null>(null)
+  const [participantId, setParticipantId] = useState<string | null>(null)
+  const [game, setGame] = useState<WheelChoice | null>(null)
+  const [sound, setSound] = useState<RouletteSound>("classic")
+  const [spinning, setSpinning] = useState(false)
 
-  const byId = useMemo(() => {
-    const m = new Map<string, Participant>()
-    for (const p of live.participants) m.set(p.id, p)
-    return m
-  }, [live.participants])
+  const groups = useMemo(() =>
+    live.battleGroups.map((group) => ({
+      ...group,
+      events: group.events.filter((event) => live.participants.some((person) => person.eventId === event.id)),
+    })).filter((group) => group.events.length > 0),
+  [live.battleGroups, live.participants])
 
-  // Eliminados que ainda existem na fila atual (reconciliação com o polling).
-  const validEliminated = useMemo(
-    () => eliminatedIds.filter((id) => byId.has(id)),
-    [eliminatedIds, byId],
-  )
+  const selectedGroup = groups.find((group) => group.id === groupId) ?? groups[0] ?? null
+  const selectedTeam = selectedGroup?.events.find((event) => event.id === teamId) ?? null
+  const teamPeople = selectedTeam ? live.participants.filter((person) => person.eventId === selectedTeam.id) : []
+  const selectedPerson = teamPeople.find((person) => person.id === participantId) ?? null
+  const games = useMemo(() => getPublicGameChoices(selectedPerson), [selectedPerson])
+  const selectedGame = game && games.some((choice) => choice.label === game.label) ? game : null
+  const gameDescription = getGameDescription(selectedPerson, selectedGame)
 
-  const remaining = useMemo(
-    () => live.participants.filter((p) => !validEliminated.includes(p.id)),
-    [live.participants, validEliminated],
-  )
+  const choices: WheelChoice[] = stage === "team"
+    ? (selectedGroup?.events ?? []).map((team) => ({ id: team.id, label: team.name }))
+    : stage === "person"
+      ? teamPeople.map((person) => ({ id: person.id, label: person.username }))
+      : games
 
-  const eliminatedParticipants = useMemo(
-    () => validEliminated.map((id) => byId.get(id)!).filter(Boolean),
-    [validEliminated, byId],
-  )
+  const labels: Record<Stage, string> = { team: "Sortear equipe", person: "Sortear pessoa", game: "Sortear jogo" }
 
-  const winner =
-    live.participants.length > 0 && remaining.length === 1 ? remaining[0] : null
-
-  const selectedParticipant = selectedId ? byId.get(selectedId) ?? null : null
-
-  const wheelNames: WheelName[] = remaining.map((p) => ({
-    id: p.id,
-    username: p.username,
-    eventName: p.eventName,
-    fields: p.fields,
-  }))
-
-  function handleEliminated(name: WheelName) {
-    setSelectedId(name.id)
-    setEliminatedIds((prev) => (prev.includes(name.id) ? prev : [...prev, name.id]))
+  function chooseGroup(id: string) {
+    if (spinning) return
+    setGroupId(id)
+    reset()
   }
 
-  function resetGame() {
-    setEliminatedIds([])
-    setSelectedId(null)
+  function reset() {
+    setStage("team")
+    setTeamId(null)
+    setParticipantId(null)
+    setGame(null)
   }
+
+  function handleSelected(choice: WheelChoice) {
+    if (stage === "team") {
+      setTeamId(choice.id)
+      const people = live.participants.filter((person) => person.eventId === choice.id)
+      setParticipantId(people.length === 1 ? people[0].id : null)
+      setGame(null)
+    } else if (stage === "person") {
+      setParticipantId(choice.id)
+      setGame(null)
+    } else {
+      setGame(choice)
+    }
+  }
+
+  const nextStage: Stage | null = stage === "team" && selectedTeam
+    ? teamPeople.length > 1 ? "person" : selectedPerson ? "game" : null
+    : stage === "person" && selectedPerson ? "game" : null
+  const canPickGame = Boolean(selectedPerson && games.length)
+  const currentResult = stage === "team" ? selectedTeam?.name : stage === "person" ? selectedPerson?.username : selectedGame?.label
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6">
       <SiteHeader />
       <NuuhSpotlight />
-
       {live.error && (
         <div className="flex items-center gap-3 rounded-2xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           <AlertTriangle className="size-4 shrink-0" />
           <span>Não foi possível carregar tudo da API da Rhyno: {live.error}</span>
         </div>
       )}
+      <Hero selectedTeam={selectedTeam?.name ?? null} selectedName={selectedPerson?.username ?? null} selectedGame={selectedGame?.label ?? null} stats={live.stats} updatedAt={live.updatedAt} />
 
-      <Hero
-        selectedName={selectedParticipant?.username ?? null}
-        stats={live.stats}
-        remaining={remaining.length}
-        finished={eliminatedParticipants.length}
-        updatedAt={live.updatedAt}
-      />
-
-      {/* Tabs */}
-      <div className="flex items-center gap-2" id="ao-vivo">
-        <button
-          type="button"
-          onClick={() => setTab("ao-vivo")}
-          className={
-            "rounded-full px-4 py-2 text-sm font-semibold transition " +
-            (tab === "ao-vivo"
-              ? "bg-gradient-to-r from-primary to-sky-500 text-primary-foreground shadow-lg shadow-primary/30"
-              : "text-muted-foreground ring-1 ring-border hover:text-foreground")
-          }
-        >
-          Ao vivo
-        </button>
-        <button
-          type="button"
-          onClick={() => setTab("fila")}
-          className={
-            "rounded-full px-4 py-2 text-sm font-semibold transition " +
-            (tab === "fila"
-              ? "bg-gradient-to-r from-primary to-sky-500 text-primary-foreground shadow-lg shadow-primary/30"
-              : "text-muted-foreground ring-1 ring-border hover:text-foreground")
-          }
-        >
-          Apostas, pote &amp; ranking
-        </button>
-
+      <div className="flex flex-wrap items-center gap-2" id="ao-vivo">
+        <button type="button" onClick={() => setTab("ao-vivo")} className={`rounded-full px-4 py-2 text-sm font-semibold transition ${tab === "ao-vivo" ? "bg-gradient-to-r from-primary to-sky-500 text-primary-foreground shadow-lg shadow-primary/30" : "text-muted-foreground ring-1 ring-border hover:text-foreground"}`}>Ao vivo</button>
+        <button type="button" onClick={() => setTab("fila")} className={`rounded-full px-4 py-2 text-sm font-semibold transition ${tab === "fila" ? "bg-gradient-to-r from-primary to-sky-500 text-primary-foreground shadow-lg shadow-primary/30" : "text-muted-foreground ring-1 ring-border hover:text-foreground"}`}>Apostas, pote &amp; ranking</button>
         <div className="ml-auto flex flex-wrap justify-end gap-2">
-          <button
-            type="button"
-            onClick={() => void mutate()}
-            disabled={isValidating}
-            className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-muted-foreground ring-1 ring-border transition hover:text-foreground disabled:opacity-50"
-          >
-            <RefreshCw className={"size-3.5 " + (isValidating ? "animate-spin" : "")} />
-            {isValidating ? "Atualizando..." : "Atualizar dados"}
+          <button type="button" onClick={() => void mutate()} disabled={isValidating} className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-muted-foreground ring-1 ring-border transition hover:text-foreground disabled:opacity-50">
+            <RefreshCw className={`size-3.5 ${isValidating ? "animate-spin" : ""}`} /> {isValidating ? "Atualizando..." : "Atualizar dados"}
           </button>
-          {eliminatedParticipants.length > 0 && (
-            <button
-              type="button"
-              onClick={resetGame}
-              className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-muted-foreground ring-1 ring-border transition hover:text-foreground"
-            >
-              <RotateCcw className="size-3.5" />
-              Reiniciar roleta
-            </button>
-          )}
+          {(teamId || participantId || game) && <button type="button" onClick={reset} disabled={spinning} className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-muted-foreground ring-1 ring-border transition hover:text-foreground disabled:opacity-50"><RotateCcw className="size-3.5" /> Reiniciar sorteio</button>}
         </div>
       </div>
 
       {tab === "ao-vivo" ? (
         <section className="grid gap-6 lg:grid-cols-2" id="fila">
           <div className="rounded-3xl border border-border bg-card/60 p-6 backdrop-blur">
-            <p className="text-center text-xs font-semibold tracking-[0.3em] text-accent uppercase">
-              Roleta do Nuuhzão
-            </p>
-            <h2 className="mb-6 mt-1 text-center text-2xl font-bold">
-              Quem foi azarado na vez?
-            </h2>
-            <Roulette names={wheelNames} onEliminated={handleEliminated} disabled={!!winner} />
-
-            <div className="mt-6 rounded-2xl border border-border bg-background/40 p-5 text-center">
-              {selectedParticipant ? (
-                <>
-                  <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-amber-400/15 text-amber-400 ring-1 ring-amber-400/40">
-                    <Trophy className="size-6" />
-                  </div>
-                  <p className="mt-3 text-xs font-bold tracking-[0.25em] text-amber-400 uppercase">A roleta parou em</p>
-                  <p className="mt-1 text-3xl font-extrabold text-foreground">{selectedParticipant.username}</p>
-                  <p className="mt-2 inline-flex rounded-full bg-primary/15 px-3 py-1 text-sm font-bold text-primary ring-1 ring-primary/30">
-                    {selectedParticipant.eventName}
-                  </p>
-                  {selectedParticipant.fields.length > 0 && (
-                    <div className="mt-4 grid gap-2 text-left sm:grid-cols-2">
-                      {selectedParticipant.fields.slice(0, 4).map((field) => (
-                        <div key={`${selectedParticipant.id}-${field.label}`} className="rounded-xl bg-card/70 px-3 py-2 ring-1 ring-border">
-                          <p className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">{field.label}</p>
-                          <p className="mt-0.5 break-words text-sm font-bold">{field.value}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </>
-              ) : (
-                <>
-                  <p className="text-3xl font-extrabold leading-tight">Aguardando a roleta</p>
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    Assim que o Nuuh girar, o nome sai aqui.
-                  </p>
-                </>
-              )}
+            <p className="text-center text-xs font-semibold tracking-[0.3em] text-accent uppercase">Roleta do Nuuhzão</p>
+            <h2 className="mb-4 mt-1 text-center text-2xl font-bold">Quem vai jogar agora?</h2>
+            {groups.length > 1 && <label className="mb-4 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              Confronto
+              <select value={selectedGroup?.id ?? ""} onChange={(event) => chooseGroup(event.target.value)} disabled={spinning} className="max-w-[65%] rounded-lg border border-input bg-background px-3 py-2 text-foreground">
+                {groups.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}
+              </select>
+            </label>}
+            <div className="mb-6 flex flex-wrap justify-center gap-2">
+              <Step number={1} label="Equipes" active={stage === "team"} disabled={spinning} onClick={() => setStage("team")} />
+              <Step number={2} label="Pessoas" active={stage === "person"} disabled={spinning || teamPeople.length < 2} onClick={() => setStage("person")} />
+              <Step number={3} label="Jogos" active={stage === "game"} disabled={spinning || !canPickGame} onClick={() => setStage("game")} />
+            </div>
+            <Roulette key={`${selectedGroup?.id ?? "none"}-${stage}-${stage === "team" ? "" : teamId}-${stage === "game" ? participantId : ""}`} choices={choices} onSelected={handleSelected} onSpinningChange={setSpinning} buttonLabel={labels[stage]} sound={sound} onSoundChange={setSound} />
+            <div className="mt-6 rounded-2xl border border-border bg-background/40 p-5 text-center" aria-live="polite">
+              {currentResult ? <>
+                <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-amber-400/15 text-amber-400 ring-1 ring-amber-400/40"><Trophy className="size-6" /></div>
+                <p className="mt-3 text-xs font-bold tracking-[0.2em] text-amber-400 uppercase">Sorteado: {stage === "team" ? "equipe" : stage === "person" ? "pessoa" : "jogo"}</p>
+                <p className="mt-1 break-words text-2xl font-extrabold">{currentResult}</p>
+                {stage === "game" && gameDescription && gameDescription !== selectedGame?.label && <p className="mt-2 break-words text-sm text-muted-foreground">{gameDescription}</p>}
+              </> : <p className="text-sm text-muted-foreground">{stage === "team" ? "Sorteie uma das equipes com participantes." : stage === "person" ? "Sorteie uma das pessoas da equipe." : "Sorteie um jogo entre os campos públicos da pessoa."}</p>}
+              {nextStage && <button type="button" onClick={() => setStage(nextStage)} disabled={spinning || nextStage === "game" && !canPickGame} className="mt-4 rounded-xl bg-primary px-5 py-2 text-sm font-bold text-primary-foreground disabled:opacity-40">
+                {nextStage === "person" ? "Agora sortear pessoa" : "Agora sortear jogo"}
+              </button>}
+              {selectedPerson && !games.length && <p className="mt-3 text-xs text-muted-foreground">Essa pessoa não tem jogos ou campos públicos disponíveis para sortear.</p>}
             </div>
           </div>
-
-          <BattleOrder
-            remaining={remaining}
-            eliminated={eliminatedParticipants}
-            winner={winner}
-          />
+          <div className="rounded-3xl border border-border bg-card/60 p-6 backdrop-blur">
+            <p className="text-xs font-semibold tracking-[0.3em] text-accent uppercase">Ordem do sorteio</p>
+            <h2 className="mt-1 text-2xl font-bold">Equipe · pessoa · jogo</h2>
+            <div className="mt-5 grid gap-3">
+              <Outcome number={1} label="Equipe" value={selectedTeam?.name} />
+              <Outcome number={2} label="Pessoa" value={selectedPerson?.username} hint={selectedTeam && teamPeople.length === 1 ? "Única pessoa da equipe" : undefined} />
+              <Outcome number={3} label="Jogo" value={selectedGame?.label} detail={gameDescription && gameDescription !== selectedGame?.label ? gameDescription : undefined} />
+            </div>
+            {selectedPerson && selectedPerson.fields.some((field) => !field.sensitive && field.value?.trim()) && <>
+              <p className="mt-6 text-xs font-bold tracking-wide text-muted-foreground uppercase">Campos públicos preenchidos</p>
+              <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                {selectedPerson.fields.filter((field) => !field.sensitive && field.value?.trim()).map((field, index) => (
+                  <div key={`${field.label}-${index}`} className="min-w-0 rounded-xl bg-background/40 p-3">
+                    <p className="text-[11px] text-muted-foreground">{field.label}</p>
+                    <p className="break-words text-sm font-bold">{field.value}</p>
+                  </div>
+                ))}
+              </div>
+            </>}
+            {selectedTeam && <p className="mt-5 text-xs text-muted-foreground">Pessoas disponíveis na equipe: {teamPeople.length}. Pode voltar a uma etapa e girar novamente.</p>}
+          </div>
         </section>
-      ) : (
-        <Ranking
-          participants={live.participants}
-          battleGroups={live.battleGroups}
-          donations={live.recentDonations}
-        />
-      )}
-
-      <footer className="mt-2 border-t border-border pt-5 text-xs text-muted-foreground">
-        18+ | Jogue com responsabilidade! · Atualização automática a cada 10 minutos
-      </footer>
+      ) : <Ranking participants={live.participants} battleGroups={live.battleGroups} donations={live.recentDonations} />}
+      <footer className="mt-2 border-t border-border pt-5 text-xs text-muted-foreground">18+ | Jogue com responsabilidade! · Atualização automática a cada 10 minutos</footer>
     </div>
   )
+}
+
+function Step({ number, label, active, disabled, onClick }: { number: number; label: string; active: boolean; disabled: boolean; onClick: () => void }) {
+  return <button type="button" disabled={disabled} onClick={onClick} className={`rounded-full px-3 py-2 text-xs font-bold transition disabled:cursor-not-allowed disabled:opacity-40 ${active ? "bg-primary text-primary-foreground" : "bg-background/60 text-muted-foreground ring-1 ring-border hover:text-foreground"}`}>{number}. {label}</button>
+}
+
+function Outcome({ number, label, value, hint, detail }: { number: number; label: string; value?: string; hint?: string; detail?: string }) {
+  return <div className={`flex gap-3 rounded-2xl border p-4 ${value ? "border-emerald-500/35 bg-emerald-500/10" : "border-border bg-background/40"}`}>
+    <span className={`flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${value ? "bg-emerald-500/20 text-emerald-400" : "bg-secondary text-muted-foreground"}`}>{value ? <Check className="size-4" /> : number}</span>
+    <div className="min-w-0">
+      <p className="text-xs text-muted-foreground">{label}{hint ? ` · ${hint}` : ""}</p>
+      <p className="mt-0.5 break-words text-lg font-bold">{value ?? "Aguardando sorteio"}</p>
+      {detail && <p className="mt-1 break-words text-xs text-muted-foreground">{detail}</p>}
+    </div>
+  </div>
 }
