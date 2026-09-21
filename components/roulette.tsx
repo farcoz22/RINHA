@@ -7,6 +7,8 @@ import { colorForIndex } from "@/lib/format"
 export interface WheelName {
   id: string
   username: string
+  eventName: string
+  fields: { label: string; value: string; sensitive: boolean }[]
 }
 
 interface RouletteProps {
@@ -37,10 +39,14 @@ export function Roulette({ names, onEliminated, disabled }: RouletteProps) {
   const [rotation, setRotation] = useState(0)
   const [spinning, setSpinning] = useState(false)
   const [soundOn, setSoundOn] = useState(true)
+  const [spinNames, setSpinNames] = useState<WheelName[]>(names)
+  const [landedId, setLandedId] = useState<string | null>(null)
   const rotationRef = useRef(0)
   const audioCtxRef = useRef<AudioContext | null>(null)
 
   const total = names.length
+  const displayedNames = spinning || landedId ? spinNames : names
+  const displayedTotal = displayedNames.length
 
   const tick = useCallback(() => {
     if (!soundOn || typeof window === "undefined") return
@@ -64,15 +70,18 @@ export function Roulette({ names, onEliminated, disabled }: RouletteProps) {
 
   const spin = useCallback(() => {
     if (spinning || total === 0 || disabled) return
+    const currentNames = [...names]
+    setSpinNames(currentNames)
+    setLandedId(null)
     setSpinning(true)
 
     const winnerIndex = Math.floor(Math.random() * total)
     const slice = 360 / total
     const winnerCenter = winnerIndex * slice + slice / 2
-    // O ponteiro fica no topo (270°). Traz o centro da fatia até lá.
+    // A primeira fatia começa no topo. Traz o centro sorteado exatamente ao ponteiro.
     const current = ((rotationRef.current % 360) + 360) % 360
     const base = rotationRef.current - current
-    let target = base + (270 - winnerCenter)
+    let target = base - winnerCenter
     target += 360 * 6 // voltas extras para dar emoção
     if (target <= rotationRef.current) target += 360
 
@@ -84,7 +93,8 @@ export function Roulette({ names, onEliminated, disabled }: RouletteProps) {
     window.setTimeout(() => {
       window.clearInterval(ticks)
       setSpinning(false)
-      onEliminated(names[winnerIndex])
+      setLandedId(currentNames[winnerIndex].id)
+      onEliminated(currentNames[winnerIndex])
     }, 4200)
   }, [spinning, total, disabled, tick, onEliminated, names])
 
@@ -117,30 +127,50 @@ export function Roulette({ names, onEliminated, disabled }: RouletteProps) {
             className="size-full"
             style={{
               transform: `rotate(${rotation}deg)`,
+              transformOrigin: "center",
               transition: spinning ? "transform 4.2s cubic-bezier(0.15, 0.9, 0.2, 1)" : "none",
             }}
           >
-            {total === 0 ? (
+            {displayedTotal === 0 ? (
               <circle cx={R} cy={R} r={R - 2} fill="var(--muted)" />
             ) : (
-              names.map((n, i) => {
-                const slice = 360 / total
+              displayedNames.map((n, i) => {
+                const slice = 360 / displayedTotal
                 const mid = i * slice + slice / 2
                 const labelPos = polar(R, R, R * 0.62, mid)
+                const selected = landedId === n.id
                 return (
                   <g key={n.id}>
-                    <path d={slicePath(i, total)} fill={colorForIndex(i)} opacity={0.92} />
+                    {displayedTotal === 1 ? (
+                      <circle
+                        cx={R}
+                        cy={R}
+                        r={R - 4}
+                        fill={colorForIndex(i)}
+                        stroke={selected ? "#facc15" : "transparent"}
+                        strokeWidth={selected ? 8 : 0}
+                      />
+                    ) : (
+                      <path
+                        d={slicePath(i, displayedTotal)}
+                        fill={colorForIndex(i)}
+                        opacity={selected ? 1 : 0.92}
+                        stroke={selected ? "#facc15" : "#08111f"}
+                        strokeWidth={selected ? 7 : 2}
+                        style={selected ? { filter: "drop-shadow(0 0 12px #facc15)" } : undefined}
+                      />
+                    )}
                     <text
                       x={labelPos.x}
                       y={labelPos.y}
                       fill="#0b1220"
-                      fontSize={total > 10 ? 10 : 13}
-                      fontWeight={700}
+                      fontSize={displayedTotal > 10 ? 10 : displayedTotal === 1 ? 18 : 13}
+                      fontWeight={800}
                       textAnchor="middle"
                       dominantBaseline="middle"
                       transform={`rotate(${mid} ${labelPos.x} ${labelPos.y})`}
                     >
-                      {n.username.length > 12 ? n.username.slice(0, 11) + "…" : n.username}
+                      {n.username.length > 14 ? n.username.slice(0, 13) + "…" : n.username}
                     </text>
                   </g>
                 )
@@ -151,7 +181,7 @@ export function Roulette({ names, onEliminated, disabled }: RouletteProps) {
 
         {/* centro */}
         <div className="pointer-events-none absolute left-1/2 top-1/2 flex size-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-background text-xs font-bold text-muted-foreground ring-4 ring-border">
-          {total}
+          {displayedTotal}
         </div>
       </div>
 

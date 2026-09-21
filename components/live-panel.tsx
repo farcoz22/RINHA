@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react"
 import useSWR from "swr"
-import { AlertTriangle, RotateCcw } from "lucide-react"
+import { AlertTriangle, RefreshCw, RotateCcw, Trophy } from "lucide-react"
 import type { LiveData, Participant } from "@/lib/types"
 import { SiteHeader } from "@/components/site-header"
 import { Hero } from "@/components/hero"
@@ -30,9 +30,11 @@ const EMPTY: LiveData = {
 type Tab = "ao-vivo" | "fila"
 
 export function LivePanel({ initialData }: { initialData: LiveData }) {
-  const { data } = useSWR<LiveData>("/api/live", fetcher, {
-    // Um minuto reduz em cerca de 67% as chamadas quando comparado aos 20s anteriores.
-    refreshInterval: 60_000,
+  const { data, mutate, isValidating } = useSWR<LiveData>("/api/live", fetcher, {
+    // Uma chamada a cada 10 minutos reduz o consumo; o operador pode atualizar manualmente.
+    refreshInterval: 600_000,
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
     fallbackData: initialData,
     keepPreviousData: true,
   })
@@ -40,7 +42,7 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
   const live = data ?? EMPTY
   const [tab, setTab] = useState<Tab>("ao-vivo")
   const [eliminatedIds, setEliminatedIds] = useState<string[]>([])
-  const [selectedName, setSelectedName] = useState<string | null>(null)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
 
   const byId = useMemo(() => {
     const m = new Map<string, Participant>()
@@ -67,16 +69,23 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
   const winner =
     live.participants.length > 0 && remaining.length === 1 ? remaining[0] : null
 
-  const wheelNames: WheelName[] = remaining.map((p) => ({ id: p.id, username: p.username }))
+  const selectedParticipant = selectedId ? byId.get(selectedId) ?? null : null
+
+  const wheelNames: WheelName[] = remaining.map((p) => ({
+    id: p.id,
+    username: p.username,
+    eventName: p.eventName,
+    fields: p.fields,
+  }))
 
   function handleEliminated(name: WheelName) {
-    setSelectedName(name.username)
+    setSelectedId(name.id)
     setEliminatedIds((prev) => (prev.includes(name.id) ? prev : [...prev, name.id]))
   }
 
   function resetGame() {
     setEliminatedIds([])
-    setSelectedName(null)
+    setSelectedId(null)
   }
 
   return (
@@ -91,7 +100,7 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
       )}
 
       <Hero
-        selectedName={selectedName}
+        selectedName={selectedParticipant?.username ?? null}
         stats={live.stats}
         remaining={remaining.length}
         finished={eliminatedParticipants.length}
@@ -125,16 +134,27 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
           Apostas, pote &amp; ranking
         </button>
 
-        {eliminatedParticipants.length > 0 && (
+        <div className="ml-auto flex flex-wrap justify-end gap-2">
           <button
             type="button"
-            onClick={resetGame}
-            className="ml-auto inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-muted-foreground ring-1 ring-border transition hover:text-foreground"
+            onClick={() => void mutate()}
+            disabled={isValidating}
+            className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-muted-foreground ring-1 ring-border transition hover:text-foreground disabled:opacity-50"
           >
-            <RotateCcw className="size-3.5" />
-            Reiniciar roleta
+            <RefreshCw className={"size-3.5 " + (isValidating ? "animate-spin" : "")} />
+            {isValidating ? "Atualizando..." : "Atualizar dados"}
           </button>
-        )}
+          {eliminatedParticipants.length > 0 && (
+            <button
+              type="button"
+              onClick={resetGame}
+              className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-muted-foreground ring-1 ring-border transition hover:text-foreground"
+            >
+              <RotateCcw className="size-3.5" />
+              Reiniciar roleta
+            </button>
+          )}
+        </div>
       </div>
 
       {tab === "ao-vivo" ? (
@@ -149,10 +169,26 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
             <Roulette names={wheelNames} onEliminated={handleEliminated} disabled={!!winner} />
 
             <div className="mt-6 rounded-2xl border border-border bg-background/40 p-5 text-center">
-              {selectedName ? (
+              {selectedParticipant ? (
                 <>
-                  <p className="text-sm text-muted-foreground">Último sorteado</p>
-                  <p className="mt-1 text-3xl font-extrabold">{selectedName}</p>
+                  <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-amber-400/15 text-amber-400 ring-1 ring-amber-400/40">
+                    <Trophy className="size-6" />
+                  </div>
+                  <p className="mt-3 text-xs font-bold tracking-[0.25em] text-amber-400 uppercase">A roleta parou em</p>
+                  <p className="mt-1 text-3xl font-extrabold text-foreground">{selectedParticipant.username}</p>
+                  <p className="mt-2 inline-flex rounded-full bg-primary/15 px-3 py-1 text-sm font-bold text-primary ring-1 ring-primary/30">
+                    {selectedParticipant.eventName}
+                  </p>
+                  {selectedParticipant.fields.length > 0 && (
+                    <div className="mt-4 grid gap-2 text-left sm:grid-cols-2">
+                      {selectedParticipant.fields.slice(0, 4).map((field) => (
+                        <div key={`${selectedParticipant.id}-${field.label}`} className="rounded-xl bg-card/70 px-3 py-2 ring-1 ring-border">
+                          <p className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">{field.label}</p>
+                          <p className="mt-0.5 break-words text-sm font-bold">{field.value}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </>
               ) : (
                 <>
@@ -180,7 +216,7 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
       )}
 
       <footer className="mt-2 border-t border-border pt-5 text-xs text-muted-foreground">
-        18+ | Jogue com responsabilidade! · Dados ao vivo via API da Rhyno
+        18+ | Jogue com responsabilidade! · Atualização automática a cada 10 minutos
       </footer>
     </div>
   )
