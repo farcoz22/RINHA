@@ -137,20 +137,40 @@
 .rhyno-live-dot {
   animation: rhyno-pulse 1.4s ease-in-out infinite;
 }
+
 @keyframes rank-enter {
   from { opacity: 0.45; transform: translateY(8px); box-shadow: 0 0 0 transparent; }
   50% { box-shadow: 0 0 20px oklch(0.83 0.16 82 / 0.28); }
   to { opacity: 1; transform: translateY(0); box-shadow: 0 0 0 transparent; }
 }
-
 @keyframes rank-target {
   from { transform: rotate(-50deg) scale(1.5); opacity: 0.4; }
   to { transform: rotate(0) scale(1); opacity: 1; }
 }
-
 .rank-lead { animation: rank-enter 900ms ease-out both; }
 .rank-crosshair { animation: rank-target 750ms ease-out both; }
-
 @media (prefers-reduced-motion: reduce) {
   .rank-lead, .rank-crosshair { animation: none; }
+}
+
+.casino-wheel-frame {
+  background: radial-gradient(circle at 30% 20%, #cba85e 0%, #725225 30%, #1a140e 66%, #d6ad5f 95%);
+  box-shadow: 0 16px 32px #0009, 0 0 32px #c68e4140, inset 0 0 8px #ffdf88;
+}
+.casino-ball {
+  background: radial-gradient(circle at 32% 25%, white, #e8edf1 45%, #85929f 80%);
+  box-shadow: 0 2px 5px #000, 0 0 12px #fff9;
+}
+.roulette-stage:fullscreen {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  align-items: start;
+  gap: 1rem;
+  overflow: auto;
+  background: #0f1928;
+  padding: clamp(1rem, 3vw, 3rem);
+}
+.roulette-stage:fullscreen > * { min-width: 0; }
+@media (max-width: 750px) {
+  .roulette-stage:fullscreen { grid-template-columns: 1fr; }
 }
