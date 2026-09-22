@@ -20,9 +20,9 @@ function Avatar({ actor, activity = "idle", size = "normal" }: { actor: SceneAct
     "M32 35 Q38 13 60 17 Q78 17 79 34 Q59 28 32 35Z",
     "M30 42 Q30 18 52 14 Q82 11 79 39 Q61 24 40 34Z",
   ]
-  return <div className={`scene-avatar scene-avatar--${activity} ${size === "small" ? "scene-avatar--small" : ""}`} style={{ "--avatar-hue": `${actor.hue}deg`, "--avatar-delay": `${-((actor.hue % 13) / 8)}s` } as React.CSSProperties} aria-label={`${actor.name}, personagem do bilhete na equipe ${actor.team}`}>
+  return <div className={`scene-avatar scene-avatar--${activity} ${size === "small" ? "scene-avatar--small" : ""}`} style={{ "--avatar-hue": `${actor.hue}deg`, "--avatar-delay": `${-((actor.hue % 13) / 8)}s` } as React.CSSProperties} aria-label={`${actor.displayName}, personagem do bilhete na equipe ${actor.team}`}>
     <span className="scene-plumbob" aria-hidden="true" />
-    <svg viewBox="0 0 110 164" role="img" aria-label={`Personagem de ${actor.name}`}>
+    <svg viewBox="0 0 110 164" role="img" aria-label={`Personagem de ${actor.displayName}`}>
       <ellipse cx="55" cy="157" rx="30" ry="5" fill="#0a182950" />
       <path d="M42 113 L40 151 L54 151 L58 114 M61 113 L65 151 L80 151 L73 108" stroke={trousers} strokeWidth="15" strokeLinecap="round" />
       <path d="M36 66 Q53 55 75 67 L78 116 Q55 125 34 115Z" fill={shirt} stroke="#1c3044" strokeWidth="3" />
@@ -42,7 +42,7 @@ function Avatar({ actor, activity = "idle", size = "normal" }: { actor: SceneAct
       <path d="M28 106 L28 119 M85 106 L85 119" stroke={skin} strokeWidth="7" strokeLinecap="round" />
       <path d="M40 151 L54 151 M66 151 L81 151" stroke="#151d2b" strokeWidth="9" strokeLinecap="round" />
     </svg>
-    <span className="scene-avatar-name">{actor.name}</span>
+    <span className="scene-avatar-name">{actor.displayName}</span>
   </div>
 }
 
@@ -80,17 +80,17 @@ export function AnimatedScenes({ live, mode }: { live: LiveData; mode: "neighbor
       <div className="scene-village-actors" key={`${active?.id}-${tick}`}>
         {visibleActors.map((actor) => <Avatar key={actor.id} actor={actor} activity="walk" />)}
       </div>
-      <div className="scene-event" aria-live="polite"><strong>{current?.name}</strong><span> saiu de {active?.name} para explorar a vila · nível {current?.level}</span></div>
+      <div className="scene-event" aria-live="polite"><strong>{current?.displayName}</strong><span> saiu de {active?.name} para explorar a vila · nível {current?.level}</span></div>
     </div> : <div className="scene-world scene-world--arena">
       <div className="scene-arena-grid" /><div className="scene-arena-glow" />
       <div className="scene-arena-banner">CONFRONTO VISUAL <span>Rodada {String(tick + 1).padStart(2, "0")}</span></div>
       <div className="scene-fighter scene-fighter--left" key={`${current?.id}-${tick}`}><Avatar actor={current ?? actors[0]} activity="duel" /><strong>{active?.name}</strong></div>
       <div className="scene-impact">VS<span>✦</span></div>
       <div className="scene-fighter scene-fighter--right" key={`${rival?.id}-${tick}`}>{rival ? <Avatar actor={rival} activity="duel" /> : <div className="scene-practice-target" aria-label="Alvo de treino">◎</div>}<strong>{rival ? next?.name : "TREINO"}</strong></div>
-      <div className="scene-arena-feed">{current?.name} <span>{rival ? "encontra" : "treina com"}</span> {rival?.name ?? "o alvo"} <span>na próxima cena</span></div>
+      <div className="scene-arena-feed">{current?.displayName} <span>{rival ? "encontra" : "treina com"}</span> {rival?.displayName ?? "o alvo"} <span>na próxima cena</span></div>
     </div>}
     <div className="scene-bottom"><div><span>NA CENA</span><b>{active?.name ?? "Aguardando"}</b></div><div><span>BILHETES</span><b>{actors.length}</b></div><div><span>ENTRADAS DA FILA</span><b>{formatBRL(contribution)}</b></div><div><span>PRÓXIMA EQUIPE</span><b>{next?.name ?? "Aguardando"}</b></div></div>
-    <div className="scene-roster"><span className="scene-roster-title">PERSONAGENS DOS BILHETES · {teams.length} {teams.length === 1 ? "EQUIPE" : "EQUIPES"}</span>{teams.length > 4 && <span className="scene-rotation-note">Casas e bilhetes alternam automaticamente para mostrar todos.</span>}<div>{actors.map((actor) => <div className="scene-roster-card" key={actor.id}><Avatar actor={actor} size="small" /><span><strong>{actor.name}</strong><small>{actor.team} · {formatBRL(actor.ticketAmount)} · {actor.donationXP} XP recente</small></span></div>)}</div></div>
+    <div className="scene-roster"><span className="scene-roster-title">PERSONAGENS DOS BILHETES · {teams.length} {teams.length === 1 ? "EQUIPE" : "EQUIPES"}</span>{teams.length > 4 && <span className="scene-rotation-note">Casas e bilhetes alternam automaticamente para mostrar todos.</span>}<div>{actors.map((actor) => <div className="scene-roster-card" key={actor.id}><Avatar actor={actor} size="small" /><span><strong>{actor.displayName}</strong><small>{actor.team} · {formatBRL(actor.ticketAmount)} · {actor.donationXP} XP recente</small></span></div>)}</div></div>
     <p className="scene-disclaimer">Animação ilustrativa. As cenas não determinam o vencedor nem alteram a premiação. XP considera somente doações pagas recentes com nome único.</p>
   </section>
 }

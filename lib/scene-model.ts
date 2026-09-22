@@ -5,6 +5,7 @@ export type SceneMode = "neighborhood" | "arena" | "roulette"
 export interface SceneActor {
   id: string
   name: string
+  displayName: string
   team: string
   eventId: string
   ticketAmount: number
@@ -39,6 +40,7 @@ function identity(value: string) {
 /** Só vincula doação pelo nome quando o nome identifica exatamente um bilhete. */
 export function makeActors(participants: Participant[], donations: RecentDonation[]): SceneActor[] {
   const occurrences = new Map<string, number>()
+  const ordinals = new Map<string, number>()
   for (const ticket of participants) {
     const key = identity(ticket.username)
     occurrences.set(key, (occurrences.get(key) ?? 0) + 1)
@@ -54,11 +56,14 @@ export function makeActors(participants: Participant[], donations: RecentDonatio
   return participants.map((ticket) => {
     const hash = ticketHash(ticket.id)
     const key = identity(ticket.username)
+    const ordinal = (ordinals.get(key) ?? 0) + 1
+    ordinals.set(key, ordinal)
     // A lista da API tem somente doações recentes: não apresentar XP como total histórico.
     const donationXP = occurrences.get(key) === 1 ? Math.max(0, Math.floor((recentPaid.get(key) ?? 0) * 10)) : 0
     return {
       id: ticket.id,
       name: ticket.username,
+      displayName: occurrences.get(key)! > 1 ? `${ticket.username} · bilhete ${ordinal}` : ticket.username,
       team: ticket.eventName,
       eventId: ticket.eventId,
       ticketAmount: ticket.amount,
