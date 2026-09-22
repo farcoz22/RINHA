@@ -12,6 +12,8 @@ import { NuuhSpotlight } from "@/components/nuuh-spotlight"
 import { getGameDescription, getPublicGameChoices } from "@/lib/roulette-games"
 import { AnimatedScenes, type VillageResult } from "@/components/animated-scenes"
 import type { SceneMode } from "@/lib/scene-model"
+import type { PoolDraft } from "@/lib/pool-preview"
+import { LiveSidebar } from "@/components/live-sidebar"
 
 const fetcher = (url: string) => fetch(url).then((response) => response.json() as Promise<LiveData>)
 type Stage = "team" | "person" | "game"
@@ -29,10 +31,18 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
   const [tab, setTab] = useState<Tab>("ao-vivo")
   const [sceneMode, setSceneMode] = useState<SceneMode>("roulette")
   const [autoPlayRoulette, setAutoPlayRoulette] = useState(true)
+  const [poolDraft, setPoolDraft] = useState<PoolDraft>({})
   useEffect(() => {
     const saved = window.localStorage.getItem("rinha-scene-mode")
     if (saved === "neighborhood" || saved === "arena" || saved === "roulette") setSceneMode(saved)
     if (window.localStorage.getItem("rinha-roulette-auto") === "off") setAutoPlayRoulette(false)
+    try {
+      const saved = window.localStorage.getItem("rhyno-pool-calculator")
+      if (saved) setPoolDraft(JSON.parse(saved) as PoolDraft)
+    } catch { /* A live continua mesmo sem acesso ao armazenamento local. */ }
+    const onPoolChange = (event: Event) => setPoolDraft((event as CustomEvent<PoolDraft>).detail)
+    window.addEventListener("rhyno-pool-draft-change", onPoolChange)
+    return () => window.removeEventListener("rhyno-pool-draft-change", onPoolChange)
   }, [])
   function changeSceneMode(next: SceneMode) {
     if (next !== sceneMode) reset()
@@ -140,7 +150,7 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
   }, [sceneMode, tab, autoPlayRoulette, spinning, stage, selectedTeam?.id, selectedPerson?.id, selectedGame?.id, selectedGroup?.id, groups, teamPeople.length, canPickGame])
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6">
+    <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6">
       <SiteHeader />
       <NuuhSpotlight />
       {live.error && (
@@ -200,6 +210,7 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
               {selectedPerson && !games.length && <p className="mt-3 text-xs text-muted-foreground">Essa pessoa não tem jogos ou campos públicos disponíveis para sortear.</p>}
             </div>
           </div>
+          <div className="live-secondary"><LiveSidebar groups={groups} participants={live.participants} groupId={selectedGroup?.id ?? null} draft={poolDraft} onGroupChange={chooseGroup} />
           <div className="rounded-3xl border border-border bg-card/60 p-6 backdrop-blur">
             <p className="text-xs font-semibold tracking-[0.3em] text-accent uppercase">Ordem do sorteio</p>
             <h2 className="mt-1 text-2xl font-bold">Equipe · pessoa · jogo</h2>
@@ -220,8 +231,8 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
               </div>
             </>}
             {selectedTeam && <p className="mt-5 text-xs text-muted-foreground">Pessoas disponíveis na equipe: {teamPeople.length}. Pode voltar a uma etapa e girar novamente.</p>}
-          </div>
-        </section> : <AnimatedScenes live={live} mode={sceneMode} onVillageResult={handleVillageResult} />}
+          </div></div>
+        </section> : <div className="live-play-grid" id="fila"><AnimatedScenes live={live} mode={sceneMode} onVillageResult={handleVillageResult} /><LiveSidebar groups={groups} participants={live.participants} groupId={selectedGroup?.id ?? null} draft={poolDraft} onGroupChange={chooseGroup} /></div>}
       </>) : <Ranking participants={live.participants} battleGroups={live.battleGroups} donations={live.recentDonations} />}
       <footer className="mt-2 border-t border-border pt-5 text-xs text-muted-foreground">18+ | Jogue com responsabilidade! · Atualização automática a cada 10 minutos</footer>
     </div>

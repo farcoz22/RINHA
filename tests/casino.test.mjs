@@ -10,6 +10,7 @@ import react from "@vitejs/plugin-react"
 import { makeTestLiveData } from "./fixtures/live-many-teams.mjs"
 import { makeActors, sceneTeams } from "../lib/scene-model.ts"
 import { getGameDescription, getPublicGameChoices } from "../lib/roulette-games.ts"
+import { getPoolPreview } from "../lib/pool-preview.ts"
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const live = makeTestLiveData()
@@ -72,6 +73,19 @@ test("simulações repetidas preservam os candidatos e os grupos", () => {
   }
 })
 
+test("placar aplica 15% e divide pelo número de bilhetes da equipe marcada", () => {
+  const group = live.battleGroups[0]
+  const draft = { [group.id]: { winnerId: group.events[0].id, casinoReturns: { [group.events[0].id]: "500,00" } } }
+  const pool = getPoolPreview(group, live.participants, draft)
+  assert.equal(pool.gross, 500)
+  assert.equal(pool.fee, 75)
+  assert.equal(pool.net, 425)
+  assert.equal(pool.winningTickets, 10)
+  assert.equal(pool.perTicket, 42.5)
+  assert.equal(pool.entries, 800)
+  assert.equal(getPoolPreview(group, live.participants, {}).perTicket, 0)
+})
+
 test("interface real comporta todos os times sem renderizar dados sensíveis", async () => {
   const server = await createServer({
     configFile: false, root,
@@ -83,12 +97,23 @@ test("interface real comporta todos os times sem renderizar dados sensíveis", a
   try {
     const { AnimatedScenes } = await server.ssrLoadModule("/components/animated-scenes.tsx")
     const html = renderToStaticMarkup(createElement(AnimatedScenes, { live, mode: "neighborhood" }))
+    const { LiveSidebar } = await server.ssrLoadModule("/components/live-sidebar.tsx")
+    const group = live.battleGroups[0]
+    const sidebar = renderToStaticMarkup(createElement(LiveSidebar, {
+      groups: live.battleGroups, participants: live.participants, groupId: group.id,
+      draft: { [group.id]: { winnerId: group.events[0].id, casinoReturns: { [group.events[0].id]: "500,00" } } },
+      onGroupChange: () => {},
+    }))
     assert.match(html, /Automático: desligado/)
     assert.match(html, /13 equipes/)
     assert.match(html, /121/)
     assert.match(html, /R\$[\s\u00a0]2\.420,00/)
     for (const team of teams) assert.ok(html.includes(team.name), team.name)
     assert.doesNotMatch(html, /SEGREDO-SENSIVEL|DOCUMENTO-SIMULADO/)
+    assert.match(sidebar, /R\$[\s\u00a0]425,00/)
+    assert.match(sidebar, /R\$[\s\u00a0]42,50/)
+    assert.match(sidebar, /SEM PATROCÍNIO ATIVO/)
+    assert.doesNotMatch(sidebar, /SEGREDO-SENSIVEL|DOCUMENTO-SIMULADO/)
   } finally {
     await server.close()
   }
