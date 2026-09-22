@@ -115,7 +115,7 @@ test("interface real comporta todos os times sem renderizar dados sensíveis", a
     assert.match(squad, /Sala dos bilhetes/)
     assert.match(squad, /Será que o Nuuh vai deixar nós vendo a cadeira novamente\?/)
     assert.match(squad, /Que hora começa isso\?/)
-    assert.match(squad, /Só sei ir veio do raio\./)
+    assert.match(squad, /Que demora para pagar!/)
     assert.equal((squad.match(/personagem do bilhete na equipe/g) ?? []).length, 6)
     assert.doesNotMatch(squad, /SEGREDO-SENSIVEL|DOCUMENTO-SIMULADO/)
     assert.match(sidebar, /R\$[\s\u00a0]425,00/)

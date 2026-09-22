@@ -211,7 +211,7 @@ function VillageDraw({ live, actors, teams, onResult, variant = "casino" }: { li
         const selected = highlight === (phase === "team" ? actor.eventId : actor.id) || person?.id === actor.id || (phase === "team" && team?.id === actor.eventId)
         const selectable = phase === "team" || phase === "person" && team?.id === actor.eventId
         return <button type="button" key={actor.id} className={`scene-squad-seat scene-squad-seat--${index + 1} ${selected ? "scene-squad-seat--selected" : ""}`} disabled={drawing || !selectable} onClick={() => draw(phase === "team" ? actor.eventId : actor.id)} aria-label={`${actor.displayName}, ${actor.team}${selectable ? "; clicar para escolher" : ""}`}>
-          {(index === 0 || index === 1 || index === 4) && <span className="scene-squad-bubble">{squadLines[(carousel + index) % squadLines.length]}</span>}
+          {index < 3 && <span className="scene-squad-bubble">{squadLines[(carousel + index) % squadLines.length]}</span>}
           <Avatar actor={actor} activity={selected ? "duel" : index % 2 ? "walk" : "idle"} />
           <span className="scene-squad-team">{actor.team}</span>
         </button>
