@@ -5,15 +5,15 @@ export function SiteHeader() {
     <header className="rounded-3xl border border-border bg-card/70 px-4 py-3 backdrop-blur sm:px-6">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <span role="img" aria-label="NuuhFPS em um momento engraçado da live" className="nuuh-meme-crop size-13 shrink-0 rounded-2xl ring-2 ring-rose-400/70" />
+          <img src="/dukoth/mark.svg" alt="Marca do painel Dukoth" className="size-13 shrink-0 rounded-2xl ring-2 ring-amber-400/70" />
           <div className="leading-tight">
-            <p className="text-sm font-bold tracking-tight sm:text-base">Batalhas do Nuuhzão</p>
+            <p className="text-sm font-bold tracking-tight sm:text-base">Batalhas do Dukoth</p>
             <p className="text-xs text-muted-foreground">Painel ao vivo da live</p>
           </div>
         </div>
 
         <nav className="flex items-center gap-2">
-          <a href="https://www.twitch.tv/nuuhfps" target="_blank" rel="noreferrer" className="hidden items-center gap-2 rounded-full bg-[#9147ff]/15 px-3 py-1.5 text-xs font-bold text-[#bf94ff] ring-1 ring-[#9147ff]/30 transition hover:bg-[#9147ff]/25 sm:inline-flex">
+          <a href="https://www.twitch.tv/dukoth" target="_blank" rel="noreferrer" className="hidden items-center gap-2 rounded-full bg-[#9147ff]/15 px-3 py-1.5 text-xs font-bold text-[#bf94ff] ring-1 ring-[#9147ff]/30 transition hover:bg-[#9147ff]/25 sm:inline-flex">
             Twitch <ExternalLink className="size-3" />
           </a>
           <a
@@ -29,7 +29,7 @@ export function SiteHeader() {
             Fila
           </a>
           <span className="rounded-full bg-gradient-to-r from-primary to-sky-500 px-3 py-1.5 text-xs font-bold text-primary-foreground shadow-lg shadow-primary/30">
-            Área do Nuuh
+            Área do Dukoth
           </span>
         </nav>
       </div>

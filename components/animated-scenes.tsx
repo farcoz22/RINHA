@@ -57,11 +57,11 @@ function AgentPortrait({ actor, frame = 0, small = false }: { actor: SceneActor;
 }
 
 const squadLines = [
-  "Será que o Nuuh vai deixar nós vendo a cadeira novamente?",
-  "Que hora começa isso?",
-  "Que demora para pagar!",
-  "Tem como já pagar meu bônus?",
-  "Só sei ir veio do raio.",
+  "Bora abrir a próxima rinha?",
+  "Quem vai jogar agora?",
+  "Meu bilhete entrou na sala!",
+  "Hoje tem sorteio?",
+  "Essa rodada vai ser minha!",
 ]
 
 function VillageDraw({ live, actors, teams, onResult, variant = "casino" }: { live: LiveData; actors: SceneActor[]; teams: SceneTeam[]; onResult?: (value: VillageResult) => void; variant?: "casino" | "squad" }) {
@@ -202,7 +202,7 @@ function VillageDraw({ live, actors, teams, onResult, variant = "casino" }: { li
 
   const focus = phase === "finished" ? (gameDescription || game?.label || person?.displayName) : drawing ? options.find((item) => item.id === highlight)?.label : phase === "team" ? "Aguardando equipe" : phase === "person" ? "Aguardando pessoa" : "Aguardando jogo"
   return <section ref={sceneRef} className={`scene-shell scene-shell--village ${variant === "squad" ? "scene-shell--squad" : "scene-shell--casino"}`} aria-label={variant === "squad" ? "Sala tática interativa dos bilhetes" : "Mesa de sorteio tático dos bilhetes"}>
-    <div className="scene-topbar"><div><span className="scene-overline">BATALHAS DO NUUHZÃO · {variant === "squad" ? "SALA DA COMUNIDADE" : "MESA DE SORTEIO"}</span><h2>{variant === "squad" ? "Sala dos bilhetes" : "Confronto & sorteio"}</h2></div><span className="scene-online"><i /> AO VIVO</span></div>
+    <div className="scene-topbar"><div><span className="scene-overline">BATALHAS DO DUKOTH · {variant === "squad" ? "SALA DA COMUNIDADE" : "MESA DE SORTEIO"}</span><h2>{variant === "squad" ? "Sala dos bilhetes" : "Confronto & sorteio"}</h2></div><span className="scene-online"><i /> AO VIVO</span></div>
     {variant === "squad" ? <div className="scene-squad-stage">
       <div className="scene-squad-grid" aria-hidden="true" />
       <div className="scene-casino-head"><span>◈ {drawing ? "ELENCO EM MOVIMENTO" : phase === "finished" ? "RESULTADO DEFINIDO" : "SALA ABERTA"}</span><span>RODADA {String(round + 1).padStart(2, "0")}</span></div>
@@ -279,7 +279,7 @@ export function AnimatedScenes({ live, mode, onVillageResult }: { live: LiveData
       <div className="scene-fighter scene-fighter--left" key={`${current?.id}-${tick}`}><AgentPortrait actor={current ?? actors[0]} frame={Math.max(0, actors.findIndex((actor) => actor.id === current?.id)) % 4} /><strong>{active?.name}</strong></div>
       <div className="scene-impact">VS<span>✦</span></div>
       <div className="scene-fighter scene-fighter--right" key={`${rival?.id}-${tick}`}>{rival ? <AgentPortrait actor={rival} frame={Math.max(0, actors.findIndex((actor) => actor.id === rival.id)) % 4} /> : <div className="scene-practice-target" aria-label="Alvo de treino">◎</div>}<strong>{rival ? next?.name : "TREINO"}</strong></div>
-      <div className="scene-arena-feed"><span className="nuuh-meme-crop nuuh-meme-crop--susto" role="img" aria-label="Nuuh reagindo à disputa" />{current?.displayName} <span>{rival ? "enfrenta" : "treina com"}</span> {rival?.displayName ?? "o alvo"}</div>
+      <div className="scene-arena-feed"><img src="/dukoth/mark.svg" alt="Marca do painel Dukoth" className="size-8 rounded-md" />{current?.displayName} <span>{rival ? "enfrenta" : "treina com"}</span> {rival?.displayName ?? "o alvo"}</div>
     </div>}
     <div className="scene-bottom"><div><span>NA CENA</span><b>{active?.name ?? "Aguardando"}</b></div><div><span>BILHETES</span><b>{actors.length}</b></div><div><span>ENTRADAS DA FILA</span><b>{formatBRL(contribution)}</b></div><div><span>PRÓXIMA EQUIPE</span><b>{next?.name ?? "Aguardando"}</b></div></div>
     <div className="scene-roster"><span className="scene-roster-title">AGENTES DOS BILHETES · {teams.length} {teams.length === 1 ? "EQUIPE" : "EQUIPES"}</span>{teams.length > 4 && <span className="scene-rotation-note">Equipes e bilhetes alternam automaticamente para mostrar todos.</span>}<div>{actors.map((actor, index) => <div className="scene-roster-card" key={actor.id}><AgentPortrait actor={actor} frame={index % 4} small /><span><strong>{actor.displayName}</strong><small>{actor.team} · {formatBRL(actor.ticketAmount)} · {actor.donationXP} XP recente</small></span></div>)}</div></div>

@@ -158,7 +158,7 @@ export function Roulette({
             <div className="casino-ball absolute left-1/2 top-[2%] size-4 -translate-x-1/2 rounded-full" />
           </div>
           <div className="pointer-events-none absolute left-1/2 top-1/2 flex size-[22%] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-[5px] border-amber-400 bg-gradient-to-br from-amber-500 via-amber-950 to-amber-500 text-center text-[10px] font-black tracking-wide text-amber-50 shadow-[0_3px_16px_#000]">
-            {spinning ? "GIRANDO" : landedId ? "SORTEADO" : "NUUH"}
+            {spinning ? "GIRANDO" : landedId ? "SORTEADO" : "DUKOTH"}
           </div>
         </div>
         <div className="pointer-events-none absolute left-1/2 top-0 z-10 -translate-x-1/2 text-amber-300 drop-shadow-[0_2px_5px_#000]" aria-hidden="true">

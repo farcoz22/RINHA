@@ -8,7 +8,7 @@ import { SiteHeader } from "@/components/site-header"
 import { Hero } from "@/components/hero"
 import { Roulette, type RouletteSound, type WheelChoice } from "@/components/roulette"
 import { Ranking } from "@/components/ranking"
-import { NuuhSpotlight } from "@/components/nuuh-spotlight"
+import { DukothSpotlight } from "@/components/dukoth-spotlight"
 import { getGameDescription, getPublicGameChoices } from "@/lib/roulette-games"
 import { AnimatedScenes, type VillageResult } from "@/components/animated-scenes"
 import type { SceneMode } from "@/lib/scene-model"
@@ -157,7 +157,7 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
   return (
     <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6">
       <SiteHeader />
-      <NuuhSpotlight />
+      <DukothSpotlight />
       {live.error && (
         <div className="flex items-center gap-3 rounded-2xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           <AlertTriangle className="size-4 shrink-0" />
@@ -187,7 +187,7 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
         </nav>
         {sceneMode === "roulette" ? <section ref={rouletteStageRef} className="roulette-stage grid gap-6 lg:grid-cols-2" id="fila">
           <div className="rounded-3xl border border-border bg-card/60 p-6 backdrop-blur">
-            <p className="text-center text-xs font-semibold tracking-[0.3em] text-accent uppercase">Roleta do Nuuhzão</p>
+            <p className="text-center text-xs font-semibold tracking-[0.3em] text-accent uppercase">Roleta do Dukoth</p>
             <h2 className="mb-4 mt-1 text-center text-2xl font-bold">Quem vai jogar agora?</h2>
             <button type="button" onClick={() => { if (document.fullscreenElement) void document.exitFullscreen(); else void rouletteStageRef.current?.requestFullscreen() }} className="mb-3 flex items-center gap-2 rounded-lg border border-amber-400/30 px-3 py-1.5 text-xs font-semibold text-amber-200 transition hover:bg-amber-400/10"><Expand className="size-3.5" /> Tela cheia para a live</button>
             <button type="button" onClick={toggleRouletteAuto} aria-pressed={autoPlayRoulette} className="mb-3 ml-2 rounded-lg border border-amber-400/30 px-3 py-1.5 text-xs font-semibold text-amber-200 transition hover:bg-amber-400/10">Giro automático: {autoPlayRoulette ? "ligado" : "desligado"}</button>

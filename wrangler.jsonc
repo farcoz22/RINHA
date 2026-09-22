@@ -1,10 +1,17 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "rinha",
+  "name": "rinha-dukoth",
   "compatibility_date": "2026-09-21",
   "compatibility_flags": [
     "nodejs_compat"
   ],
+  "secrets": {
+    "required": [
+      "RHYNO_CLIENT_ID",
+      "RHYNO_CLIENT_SECRET",
+      "EXPORT_PASSWORD"
+    ]
+  },
   "main": "vinext/server/fetch-handler",
   "assets": {
     "directory": "dist/client",
@@ -14,8 +21,8 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "rinha-historico",
-      "database_id": "8ac51edb-884c-463f-833b-f01d9b8ccd63"
+      "database_name": "rinha-dukoth-historico",
+      "database_id": "00000000-0000-0000-0000-000000000000"
     }
   ]
 }

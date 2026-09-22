@@ -18,8 +18,8 @@ export function Hero({ selectedTeam, selectedName, selectedGame, stats, updatedA
           Testa a sorte :D
         </p>
         <div className="mt-4 flex items-center justify-center gap-3 sm:gap-5">
-          <span role="img" aria-label="Nuuh fazendo cara de surpresa na live" className="nuuh-meme-crop size-16 shrink-0 rotate-[-8deg] rounded-2xl border-2 border-rose-400 shadow-lg shadow-rose-400/30 sm:size-24" />
-          <h1 className="text-balance text-4xl font-extrabold tracking-tight sm:text-7xl">Batalhas do Nuuhzão</h1>
+          <img src="/dukoth/mark.svg" alt="Marca do painel Dukoth" className="size-16 shrink-0 rotate-[-8deg] rounded-2xl border-2 border-amber-400 shadow-lg shadow-amber-400/30 sm:size-24" />
+          <h1 className="text-balance text-4xl font-extrabold tracking-tight sm:text-7xl">Batalhas do Dukoth</h1>
         </div>
         <p className="mt-3 text-muted-foreground">Sorteie a equipe, a pessoa e o jogo da vez.</p>
 

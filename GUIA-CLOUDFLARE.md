@@ -1,81 +1,30 @@
-# Publicar no Cloudflare Workers
+# Instalar a versão do Dukoth
 
-Este projeto já está configurado para Cloudflare Workers com Next.js 16 e vinext.
+Esta cópia usa um Worker, um banco D1 e credenciais próprios. A publicação atual do Nuuh permanece separada.
 
-## Antes de começar
+## Preparar os dados
 
-Você precisa ter:
+1. No painel Cloudflare, abra **Storage & Databases → D1 SQL database → Create database**.
+2. Crie `rinha-dukoth-historico` e copie o **Database ID**.
+3. Em `wrangler.jsonc`, substitua `00000000-0000-0000-0000-000000000000` pelo ID novo. Mantenha `binding: "DB"` e `name: "rinha-dukoth"`.
+4. Envie essa alteração apenas para a cópia do Dukoth. **Nunca use o ID do banco `rinha-historico` do Nuuh.**
 
-- uma conta gratuita no Cloudflare;
-- este projeto enviado ao GitHub;
-- `RHYNO_CLIENT_ID` e `RHYNO_CLIENT_SECRET` válidos.
+## Conectar o GitHub
 
-Nunca coloque as credenciais da Rhyno em arquivos enviados ao GitHub.
-
-## Publicação pelo painel do Cloudflare
-
-1. Entre em https://dash.cloudflare.com/.
-2. Abra **Workers & Pages**.
-3. Clique em **Create application**.
-4. Selecione **Import a repository** ou **Connect to Git**.
-5. Conecte sua conta do GitHub e escolha o repositório deste projeto.
-6. Use o nome `rhyno-apostas`.
-7. Configure o comando de build como `pnpm run build:vinext`.
-8. Configure o comando de deploy como `pnpm run deploy:vinext` caso o painel solicite esse campo.
-9. Salve e aguarde o primeiro deploy.
-
-## Credenciais da Rhyno
-
-Depois que o Worker for criado:
-
-1. Abra o Worker `rhyno-apostas`.
-2. Entre em **Settings**.
-3. Abra **Variables and Secrets**.
-4. Adicione `RHYNO_CLIENT_ID` como **Secret**.
-5. Adicione `RHYNO_CLIENT_SECRET` como **Secret**.
-6. Adicione `EXPORT_PASSWORD` como **Secret**. Essa será a senha usada para finalizar rinhas, exportar pagamentos e marcar ganhadores como pagos.
-7. Salve sem colocar aspas ou o sinal `=` no nome.
-
-## Histórico e pagamentos (D1)
-
-O histórico precisa de um banco D1 para continuar salvo depois de cada deploy:
-
-1. No painel do Cloudflare, abra **Storage & Databases** → **D1 SQL database**.
-2. Clique em **Create database**, use o nome `rinha-historico` e conclua.
-3. Copie o **Database ID** mostrado na página do banco.
-4. No arquivo `wrangler.jsonc`, adicione antes do último `}`:
-
-```jsonc
-"d1_databases": [
-  {
-    "binding": "DB",
-    "database_name": "rinha-historico",
-    "database_id": "COLE_AQUI_O_DATABASE_ID"
-  }
-]
-```
-
-5. Envie essa alteração ao GitHub. O Cloudflare fará um novo deploy automaticamente.
-
-Não é preciso criar tabelas manualmente: o aplicativo cria as tabelas de rinhas e pagamentos no primeiro acesso.
-
-## Novo deploy
-
-Depois de cadastrar os segredos e o D1, abra **Deployments** e faça um novo deploy. Alterações futuras enviadas à branch `main` também serão publicadas automaticamente.
-
-## Configuração esperada
+No painel Cloudflare, abra **Workers & Pages → Create application → Import a repository**. Escolha o repositório da cópia do Dukoth. Se estiver usando temporariamente uma branch do repositório RINHA, selecione `dukoth-preparacao` como branch de produção e confira que o Worker novo se chama `rinha-dukoth`. Não associe a cópia ao Worker `rinha`.
 
 | Campo | Valor |
 | --- | --- |
-| Framework | Next.js / Worker |
+| Diretório raiz | `/` |
 | Build command | `pnpm run build:vinext` |
 | Deploy command | `pnpm run deploy:vinext` |
-| Node.js | 20 ou superior |
-| D1 binding | `DB` |
-| Senha administrativa | `EXPORT_PASSWORD` (Secret) |
+| Nome do Worker | `rinha-dukoth` |
+| D1 binding | `DB` → `rinha-dukoth-historico` |
 
-O painel atualiza os dados a cada 60 segundos para reduzir o uso gratuito.
+Após criar o Worker, em **Settings → Variables and Secrets**, cadastre como **Secret**: `RHYNO_CLIENT_ID` e `RHYNO_CLIENT_SECRET` da conta usada para as filas do Dukoth, e um `EXPORT_PASSWORD` novo para exportação e fechamento. Nenhum valor dessas variáveis deve entrar no GitHub. Faça novo deploy depois de cadastrar os segredos.
 
-## Teste
+O aplicativo cria suas tabelas D1 ao primeiro acesso. Se houver erro na leitura das filas, confira as credenciais da Rhyno e a associação do D1. O endereço do site aparecerá em **Domains and routes**, normalmente `https://rinha-dukoth.<seu-subdominio>.workers.dev/`.
 
-Abra a URL terminada em `.workers.dev`. Se aparecer erro de credenciais ausentes, confira se os dois segredos foram cadastrados e faça um novo deploy. Se aparecer `401 Invalid credentials`, as credenciais existem, mas precisam ser validadas ou recriadas pela equipe da Rhyno.
+## Publicação posterior
+
+Envie mudanças do Dukoth para a branch/repositório dele. A versão do Nuuh permanece na branch `main` do repositório original. Antes de publicar, confira que `wrangler.jsonc` contém o ID exclusivo do D1 do Dukoth e que a origem selecionada aponta para o Worker `rinha-dukoth`.

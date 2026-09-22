@@ -10,26 +10,11 @@ const jetbrainsMono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Batalhas do Nuuhzão — Ao vivo',
+  title: 'Batalhas do Dukoth — Ao vivo',
   description:
-    'Painel ao vivo das batalhas do Nuuhzão: roleta, filas e doações em tempo real via API da Rhyno.',
-  generator: 'v0.app',
+    'Painel das batalhas do Dukoth: sorteio, filas, pote e pagamentos via Rhyno.',
   icons: {
-    icon: [
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
-      },
-    ],
-    apple: '/apple-icon.png',
+    icon: '/dukoth/mark.svg',
   },
 }
 

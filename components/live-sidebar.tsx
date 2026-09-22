@@ -108,7 +108,7 @@ export function LiveSidebar({ groups, participants, groupId, draft, onGroupChang
         <p className="live-scoreboard__note">O ranking mostra quem colocou mais. O vencedor e o pagamento só são definidos no fechamento.</p>
       </> : <div className="live-scoreboard__note">Aguardando filas com participantes.</div>}
     </div>
-    <div className="live-meme-card"><span className="nuuh-meme-crop nuuh-meme-crop--susto" role="img" aria-label="Nuuh assustado em uma transmissão" /><div><b>O NUUH TÁ DE OLHO</b><span>Quem vira a rodada agora?</span></div></div>
+    <div className="live-meme-card"><img src="/dukoth/mark.svg" alt="Marca do painel Dukoth" className="size-11 shrink-0 rounded-lg" /><div><b>OLHO NA RODADA</b><span>Quem vira o jogo agora?</span></div></div>
     <PasswordDialog open={confirming !== null} title="Finalizar e salvar rinha" description="O fechamento será registrado no histórico com os pagamentos pendentes." error={error} busy={saving} onConfirm={finish} onClose={() => { if (!saving) setConfirming(null) }} />
   </aside>
 }
