@@ -47,6 +47,15 @@ export function PoolCalculator({
     window.dispatchEvent(new CustomEvent("rhyno-pool-draft-change", { detail: state }))
   }, [state, restored])
 
+  useEffect(() => {
+    const onDraftChange = (event: Event) => {
+      const next = (event as CustomEvent<PoolDraft>).detail
+      setState((current) => JSON.stringify(current) === JSON.stringify(next) ? current : next)
+    }
+    window.addEventListener("rhyno-pool-draft-change", onDraftChange)
+    return () => window.removeEventListener("rhyno-pool-draft-change", onDraftChange)
+  }, [])
+
   const activeGroups = useMemo(
     () => groups.filter((group) => group.events.length > 0),
     [groups],

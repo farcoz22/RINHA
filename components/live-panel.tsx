@@ -44,6 +44,11 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
     window.addEventListener("rhyno-pool-draft-change", onPoolChange)
     return () => window.removeEventListener("rhyno-pool-draft-change", onPoolChange)
   }, [])
+  function updateDraft(next: PoolDraft) {
+    setPoolDraft(next)
+    try { window.localStorage.setItem("rhyno-pool-calculator", JSON.stringify(next)) } catch { /* Continua sem persistência local. */ }
+    window.dispatchEvent(new CustomEvent("rhyno-pool-draft-change", { detail: next }))
+  }
   function changeSceneMode(next: SceneMode) {
     if (next !== sceneMode) reset()
     setSceneMode(next)
@@ -210,7 +215,7 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
               {selectedPerson && !games.length && <p className="mt-3 text-xs text-muted-foreground">Essa pessoa não tem jogos ou campos públicos disponíveis para sortear.</p>}
             </div>
           </div>
-          <div className="live-secondary"><LiveSidebar groups={groups} participants={live.participants} groupId={selectedGroup?.id ?? null} draft={poolDraft} onGroupChange={chooseGroup} />
+          <div className="live-secondary"><LiveSidebar groups={groups} participants={live.participants} groupId={selectedGroup?.id ?? null} draft={poolDraft} onGroupChange={chooseGroup} onDraftChange={updateDraft} />
           <div className="rounded-3xl border border-border bg-card/60 p-6 backdrop-blur">
             <p className="text-xs font-semibold tracking-[0.3em] text-accent uppercase">Ordem do sorteio</p>
             <h2 className="mt-1 text-2xl font-bold">Equipe · pessoa · jogo</h2>
@@ -232,7 +237,7 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
             </>}
             {selectedTeam && <p className="mt-5 text-xs text-muted-foreground">Pessoas disponíveis na equipe: {teamPeople.length}. Pode voltar a uma etapa e girar novamente.</p>}
           </div></div>
-        </section> : <div className="live-play-grid" id="fila"><AnimatedScenes live={live} mode={sceneMode} onVillageResult={handleVillageResult} /><LiveSidebar groups={groups} participants={live.participants} groupId={selectedGroup?.id ?? null} draft={poolDraft} onGroupChange={chooseGroup} /></div>}
+        </section> : <div className="live-play-grid" id="fila"><AnimatedScenes live={live} mode={sceneMode} onVillageResult={handleVillageResult} /><LiveSidebar groups={groups} participants={live.participants} groupId={selectedGroup?.id ?? null} draft={poolDraft} onGroupChange={chooseGroup} onDraftChange={updateDraft} /></div>}
       </>) : <Ranking participants={live.participants} battleGroups={live.battleGroups} donations={live.recentDonations} />}
       <footer className="mt-2 border-t border-border pt-5 text-xs text-muted-foreground">18+ | Jogue com responsabilidade! · Atualização automática a cada 10 minutos</footer>
     </div>

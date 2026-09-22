@@ -40,6 +40,12 @@ const SCHEMA = [
   FOREIGN KEY (battle_id) REFERENCES battles(id)
 )`,
   `CREATE INDEX IF NOT EXISTS idx_payouts_battle ON payouts(battle_id)`,
+  `CREATE TABLE IF NOT EXISTS sponsor_banner (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  image_base64 TEXT NOT NULL,
+  mime_type TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+)`,
 ]
 
 export async function getDb(): Promise<D1Database> {

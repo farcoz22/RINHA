@@ -103,6 +103,7 @@ test("interface real comporta todos os times sem renderizar dados sensíveis", a
       groups: live.battleGroups, participants: live.participants, groupId: group.id,
       draft: { [group.id]: { winnerId: group.events[0].id, casinoReturns: { [group.events[0].id]: "500,00" } } },
       onGroupChange: () => {},
+      onDraftChange: () => {},
     }))
     assert.match(html, /Automático: desligado/)
     assert.match(html, /13 equipes/)
@@ -113,6 +114,9 @@ test("interface real comporta todos os times sem renderizar dados sensíveis", a
     assert.match(sidebar, /R\$[\s\u00a0]425,00/)
     assert.match(sidebar, /R\$[\s\u00a0]42,50/)
     assert.match(sidebar, /SEM PATROCÍNIO ATIVO/)
+    assert.match(sidebar, /Enviar imagem do patrocinador/)
+    assert.match(sidebar, /Finalizar e salvar rinha/)
+    assert.equal((sidebar.match(/Retorno do cassino para/g) ?? []).length, group.events.length)
     assert.doesNotMatch(sidebar, /SEGREDO-SENSIVEL|DOCUMENTO-SIMULADO/)
   } finally {
     await server.close()

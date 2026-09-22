@@ -306,3 +306,16 @@ body{background:radial-gradient(ellipse 60% 24% at 86% 16%,#431e3544,transparent
 @keyframes sponsor-drift{to{transform:translateX(88px)}}
 @media(max-width:1000px){.live-play-grid,.live-play-grid:fullscreen{grid-template-columns:1fr}.live-secondary .live-sidebar{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.live-secondary .live-sidebar .live-meme-card{display:none}}
 @media(max-width:680px){.live-secondary .live-sidebar{grid-template-columns:1fr}.scene-agent-portrait{width:clamp(100px,30vw,145px);height:clamp(155px,40vw,210px)}.scene-world--arena{gap:1rem}.scene-fighter strong{font-size:.6rem}.sponsor-banner__face{width:58px;height:58px}}
+
+/* Lançamento e fechamento ao lado da cena, visível também durante o sorteio. */
+.live-scoreboard__editor{display:grid;gap:.38rem;margin-top:.8rem;padding-top:.75rem;border-top:1px solid #b781535c}
+.live-scoreboard__event-list{display:grid;gap:.35rem;max-height:210px;overflow-y:auto;scrollbar-width:thin}
+.live-scoreboard__editor-title{display:flex;justify-content:space-between;gap:.5rem;align-items:center;color:#ffd391;font-size:.61rem;letter-spacing:.1em}.live-scoreboard__editor-title span{color:#9facb7;font-size:.57rem;letter-spacing:0}
+.live-scoreboard__event{display:grid;grid-template-columns:minmax(0,1fr) 88px 63px;gap:.35rem;align-items:center;padding:.37rem;border:1px solid #446076;border-radius:.55rem;background:#0c1b2c}
+.live-scoreboard__event--winner{border-color:#45e2b4;background:#0c3b39}
+.live-scoreboard__event-name{display:grid;min-width:0;gap:.12rem}.live-scoreboard__event-name b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.69rem}.live-scoreboard__event-name small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.54rem;color:#a8b6c3}
+.live-scoreboard__event label{display:flex;align-items:center;gap:.15rem;border:1px solid #566b7a;border-radius:.38rem;padding:.28rem .32rem;font-size:.64rem;color:#bfcad5}.live-scoreboard__event input{width:100%;min-width:0;background:transparent;text-align:right;color:#fff;font-size:.72rem;font-weight:900;outline:none}.live-scoreboard__event label:focus-within{border-color:#f8c981;box-shadow:0 0 0 2px #f8c9813d}
+.live-scoreboard__event button{min-height:30px;border-radius:.38rem;background:#233952;color:#e4f0f1;font-size:.6rem;font-weight:900}.live-scoreboard__event button[aria-pressed="true"]{background:#12a779;color:#fff}
+.live-scoreboard__save{min-height:36px;margin-top:.15rem;border-radius:.45rem;background:linear-gradient(110deg,#ffc476,#f38475);color:#1f1721;font-size:.7rem;font-weight:950}.live-scoreboard__save:disabled{opacity:.45;cursor:not-allowed}.live-scoreboard__success{font-size:.65rem;color:#90f6cc}
+.sponsor-banner__uploaded{position:absolute;inset:0;width:100%;height:82%;object-fit:contain;background:#161b29}.sponsor-banner__upload{position:absolute;z-index:5;right:.5rem;top:.5rem;display:flex;align-items:center;gap:.35rem;border:1px solid #ffdaa3b3;border-radius:.45rem;background:#111d30e8;padding:.35rem .5rem;color:white;font-size:.61rem;font-weight:900;box-shadow:0 2px 10px #0009}.sponsor-banner__upload:hover{background:#72463d}.sponsor-banner__error{font-size:.68rem;color:#ffb2a5}
+@media(max-width:410px){.live-scoreboard__event{grid-template-columns:minmax(0,1fr) 78px 60px}.sponsor-banner__upload span{display:none}}
