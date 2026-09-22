@@ -1,6 +1,6 @@
 import type { BattleGroup, Participant, RecentDonation } from "@/lib/types"
 
-export type SceneMode = "neighborhood" | "arena" | "roulette"
+export type SceneMode = "neighborhood" | "arena" | "roulette" | "squad"
 
 export interface SceneActor {
   id: string

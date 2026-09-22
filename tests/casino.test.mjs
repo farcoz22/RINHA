@@ -97,6 +97,7 @@ test("interface real comporta todos os times sem renderizar dados sensíveis", a
   try {
     const { AnimatedScenes } = await server.ssrLoadModule("/components/animated-scenes.tsx")
     const html = renderToStaticMarkup(createElement(AnimatedScenes, { live, mode: "neighborhood" }))
+    const squad = renderToStaticMarkup(createElement(AnimatedScenes, { live, mode: "squad" }))
     const { LiveSidebar } = await server.ssrLoadModule("/components/live-sidebar.tsx")
     const group = live.battleGroups[0]
     const sidebar = renderToStaticMarkup(createElement(LiveSidebar, {
@@ -111,6 +112,12 @@ test("interface real comporta todos os times sem renderizar dados sensíveis", a
     assert.match(html, /R\$[\s\u00a0]2\.420,00/)
     for (const team of teams) assert.ok(html.includes(team.name), team.name)
     assert.doesNotMatch(html, /SEGREDO-SENSIVEL|DOCUMENTO-SIMULADO/)
+    assert.match(squad, /Sala dos bilhetes/)
+    assert.match(squad, /Será que o Nuuh vai deixar nós vendo a cadeira novamente\?/)
+    assert.match(squad, /Que hora começa isso\?/)
+    assert.match(squad, /Só sei ir veio do raio\./)
+    assert.equal((squad.match(/personagem do bilhete na equipe/g) ?? []).length, 6)
+    assert.doesNotMatch(squad, /SEGREDO-SENSIVEL|DOCUMENTO-SIMULADO/)
     assert.match(sidebar, /R\$[\s\u00a0]425,00/)
     assert.match(sidebar, /R\$[\s\u00a0]42,50/)
     assert.match(sidebar, /SEM PATROCÍNIO ATIVO/)

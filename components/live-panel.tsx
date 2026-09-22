@@ -34,7 +34,7 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
   const [poolDraft, setPoolDraft] = useState<PoolDraft>({})
   useEffect(() => {
     const saved = window.localStorage.getItem("rinha-scene-mode")
-    if (saved === "neighborhood" || saved === "arena" || saved === "roulette") setSceneMode(saved)
+    if (saved === "neighborhood" || saved === "arena" || saved === "roulette" || saved === "squad") setSceneMode(saved)
     if (window.localStorage.getItem("rinha-roulette-auto") === "off") setAutoPlayRoulette(false)
     try {
       const saved = window.localStorage.getItem("rhyno-pool-calculator")
@@ -181,6 +181,7 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
         <nav className="scene-mode-switch" aria-label="Escolher visualização da live">
           <span>VISUAL DA LIVE</span>
           <button type="button" aria-pressed={sceneMode === "neighborhood"} onClick={() => changeSceneMode("neighborhood")}>Cassino tático</button>
+          <button type="button" aria-pressed={sceneMode === "squad"} onClick={() => changeSceneMode("squad")}>Sala dos bilhetes</button>
           <button type="button" aria-pressed={sceneMode === "arena"} onClick={() => changeSceneMode("arena")}>Confronto</button>
           <button type="button" aria-pressed={sceneMode === "roulette"} onClick={() => changeSceneMode("roulette")}>Roleta</button>
         </nav>

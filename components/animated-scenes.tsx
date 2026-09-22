@@ -56,7 +56,15 @@ function AgentPortrait({ actor, frame = 0, small = false }: { actor: SceneActor;
   return <div className={`scene-agent-portrait ${small ? "scene-agent-portrait--small" : ""}`} style={{ backgroundPosition: `${frame % 2 ? 100 : 0}% ${frame > 1 ? 100 : 0}%` }} role="img" aria-label={`Agente tático original representando o bilhete de ${actor.displayName}`}><span>{actor.displayName}</span></div>
 }
 
-function VillageDraw({ live, actors, teams, onResult }: { live: LiveData; actors: SceneActor[]; teams: SceneTeam[]; onResult?: (value: VillageResult) => void }) {
+const squadLines = [
+  "Será que o Nuuh vai deixar nós vendo a cadeira novamente?",
+  "Que hora começa isso?",
+  "Que demora para pagar!",
+  "Tem como já pagar meu bônus?",
+  "Só sei ir veio do raio.",
+]
+
+function VillageDraw({ live, actors, teams, onResult, variant = "casino" }: { live: LiveData; actors: SceneActor[]; teams: SceneTeam[]; onResult?: (value: VillageResult) => void; variant?: "casino" | "squad" }) {
   const [phase, setPhase] = useState<VillagePhase>("team")
   const [teamId, setTeamId] = useState<string | null>(null)
   const [personId, setPersonId] = useState<string | null>(null)
@@ -92,6 +100,13 @@ function VillageDraw({ live, actors, teams, onResult }: { live: LiveData; actors
   const visibleTeams = Array.from({ length: Math.min(4, teams.length) }, (_, index) => teams[(activeIndex + index) % teams.length])
   const peopleStart = carousel % (people.length || 1)
   const visiblePeople = people.length ? Array.from({ length: Math.min(4, people.length) }, (_, index) => people[(peopleStart + index) % people.length]) : []
+  const representatives = teams.map((item) => item.actors[carousel % item.actors.length])
+  const extraActors = actors.filter((actor) => !representatives.some((item) => item.id === actor.id))
+  const squadRoster = phase === "team"
+    ? teams.length > 6
+      ? Array.from({ length: 6 }, (_, index) => representatives[(carousel + index) % representatives.length])
+      : [...representatives, ...Array.from({ length: Math.min(6 - representatives.length, extraActors.length) }, (_, index) => extraActors[(carousel + index) % extraActors.length])]
+    : people.length ? Array.from({ length: Math.min(6, people.length) }, (_, index) => people[(carousel + index) % people.length]) : []
   const contribution = actors.reduce((total, actor) => total + actor.ticketAmount, 0)
   const options: WheelChoice[] = phase === "team"
     ? teams.map((item) => ({ id: item.id, label: item.name }))
@@ -186,9 +201,28 @@ function VillageDraw({ live, actors, teams, onResult }: { live: LiveData; actors
   }, [automatic, drawing, phase, teamId, personId, round, teams, games])
 
   const focus = phase === "finished" ? (gameDescription || game?.label || person?.displayName) : drawing ? options.find((item) => item.id === highlight)?.label : phase === "team" ? "Aguardando equipe" : phase === "person" ? "Aguardando pessoa" : "Aguardando jogo"
-  return <section ref={sceneRef} className="scene-shell scene-shell--village scene-shell--casino" aria-label="Mesa de sorteio tático dos bilhetes">
-    <div className="scene-topbar"><div><span className="scene-overline">BATALHAS DO NUUHZÃO · MESA DE SORTEIO</span><h2>Confronto & sorteio</h2></div><span className="scene-online"><i /> AO VIVO</span></div>
-    <div className="scene-casino-stage">
+  return <section ref={sceneRef} className={`scene-shell scene-shell--village ${variant === "squad" ? "scene-shell--squad" : "scene-shell--casino"}`} aria-label={variant === "squad" ? "Sala tática interativa dos bilhetes" : "Mesa de sorteio tático dos bilhetes"}>
+    <div className="scene-topbar"><div><span className="scene-overline">BATALHAS DO NUUHZÃO · {variant === "squad" ? "SALA DA COMUNIDADE" : "MESA DE SORTEIO"}</span><h2>{variant === "squad" ? "Sala dos bilhetes" : "Confronto & sorteio"}</h2></div><span className="scene-online"><i /> AO VIVO</span></div>
+    {variant === "squad" ? <div className="scene-squad-stage">
+      <div className="scene-squad-grid" aria-hidden="true" />
+      <div className="scene-casino-head"><span>◈ {drawing ? "ELENCO EM MOVIMENTO" : phase === "finished" ? "RESULTADO DEFINIDO" : "SALA ABERTA"}</span><span>RODADA {String(round + 1).padStart(2, "0")}</span></div>
+      <div className="scene-squad-platform" aria-hidden="true"><span /></div>
+      {squadRoster.map((actor, index) => {
+        const selected = highlight === (phase === "team" ? actor.eventId : actor.id) || person?.id === actor.id || (phase === "team" && team?.id === actor.eventId)
+        const selectable = phase === "team" || phase === "person" && team?.id === actor.eventId
+        return <button type="button" key={actor.id} className={`scene-squad-seat scene-squad-seat--${index + 1} ${selected ? "scene-squad-seat--selected" : ""}`} disabled={drawing || !selectable} onClick={() => draw(phase === "team" ? actor.eventId : actor.id)} aria-label={`${actor.displayName}, ${actor.team}${selectable ? "; clicar para escolher" : ""}`}>
+          {(index === 0 || index === 1 || index === 4) && <span className="scene-squad-bubble">{squadLines[(carousel + index) % squadLines.length]}</span>}
+          <Avatar actor={actor} activity={selected ? "duel" : index % 2 ? "walk" : "idle"} />
+          <span className="scene-squad-team">{actor.team}</span>
+        </button>
+      })}
+      <div className="scene-squad-center" aria-live="polite" aria-atomic="true">
+        <span>ETAPA {phase === "team" ? "01 · EQUIPE" : phase === "person" ? "02 · PESSOA" : "03 · JOGO"}</span>
+        <strong key={`${phase}-${focus}`} className={drawing ? "scene-squad-rolling" : ""}>{focus}</strong>
+        <small>{team?.name ?? "EQUIPE ?"} ✦ {person?.displayName ?? "PESSOA ?"} ✦ {game?.label ?? "JOGO ?"}</small>
+      </div>
+      <div className="scene-squad-status">{actors.length ? `${actors.length} bilhetes na sala · clique em um personagem ou use o sorteio` : "Aguardando os bilhetes chegarem à sala"}</div>
+    </div> : <div className="scene-casino-stage">
       <div className="scene-casino-head"><span>◈ {phase === "finished" ? "RESULTADO REVELADO" : drawing ? "SORTEIO EM CURSO" : "MESA ABERTA"}</span><span>RODADA {String(round + 1).padStart(2, "0")}</span></div>
       <div className="scene-casino-center" aria-live="polite" aria-atomic="true">
         <span className="scene-casino-kicker">{phase === "finished" ? "ESCOLHIDO" : drawing ? `SORTEANDO ${phaseName.toUpperCase()}` : `ETAPA ${phase === "team" ? 1 : phase === "person" ? 2 : 3} / 3 · ${phaseName.toUpperCase()}`}</span>
@@ -196,7 +230,7 @@ function VillageDraw({ live, actors, teams, onResult }: { live: LiveData; actors
         <div className="scene-casino-trail"><span>{team?.name ?? "EQUIPE ?"}</span><span>✦</span><span>{person?.displayName ?? "PESSOA ?"}</span><span>✦</span><span>{game?.label ?? (phase === "finished" ? "SEM JOGO PÚBLICO" : "JOGO ?")}</span></div>
       </div>
       <div className="scene-casino-floor">{drawing ? "◆ ◆ ◆ ◆ ◆" : phase === "finished" ? "✦ BATALHA DEFINIDA ✦" : "PRONTO PARA O SORTEIO"}</div>
-    </div>
+    </div>}
     <div className="scene-village-controls"><span className="scene-step-indicator">{drawing ? `Sorteando ${phaseName}...` : phase === "finished" ? "Resultado pronto para a live" : `Escolha ou sorteie ${phaseName}`}</span><div>
       <button type="button" onClick={() => setAutomatic((value) => !value)} aria-pressed={automatic}>{automatic ? "Automático: ligado" : "Automático: desligado"}</button>
       <button type="button" onClick={() => { if (document.fullscreenElement) void document.exitFullscreen(); else void (sceneRef.current?.closest(".live-play-grid") ?? sceneRef.current)?.requestFullscreen() }}>Tela cheia</button>
@@ -215,7 +249,7 @@ function VillageDraw({ live, actors, teams, onResult }: { live: LiveData; actors
   </section>
 }
 
-export function AnimatedScenes({ live, mode, onVillageResult }: { live: LiveData; mode: "neighborhood" | "arena"; onVillageResult?: (value: VillageResult) => void }) {
+export function AnimatedScenes({ live, mode, onVillageResult }: { live: LiveData; mode: "neighborhood" | "squad" | "arena"; onVillageResult?: (value: VillageResult) => void }) {
   const actors = useMemo(() => makeActors(live.participants, live.recentDonations), [live.participants, live.recentDonations])
   const teams = useMemo(() => sceneTeams(live.battleGroups, actors), [live.battleGroups, actors])
   const [tick, setTick] = useState(0)
@@ -235,6 +269,7 @@ export function AnimatedScenes({ live, mode, onVillageResult }: { live: LiveData
       : null
   const contribution = actors.reduce((total, actor) => total + actor.ticketAmount, 0)
   if (mode === "neighborhood") return <VillageDraw live={live} actors={actors} teams={teams} onResult={onVillageResult} />
+  if (mode === "squad") return <VillageDraw live={live} actors={actors} teams={teams} onResult={onVillageResult} variant="squad" />
 
   return <section className="scene-shell" aria-label="Arena dos bilhetes, animação automática dos bilhetes">
     <div className="scene-topbar"><div><span className="scene-overline">AGENTES ORIGINAIS · CONFRONTO VISUAL</span><h2>Confronto tático</h2></div><span className="scene-online"><i /> CENA AUTOMÁTICA</span></div>
