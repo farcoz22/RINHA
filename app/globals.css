@@ -275,3 +275,4 @@
 .scene-world--arena{background:#111b29 url('/nuuh/confronto-original.webp') center/cover no-repeat}.scene-world--arena .scene-arena-grid,.scene-world--arena .scene-arena-glow{opacity:.2}
 @keyframes scene-jackpot{0%{transform:scale(.85);filter:brightness(2)}65%{transform:scale(1.05)}100%{transform:scale(1);filter:brightness(1)}}
 @media(max-width:680px){.scene-casino-stage{height:440px;background-position:center}.scene-casino-center{width:76%;padding:.8rem .2rem}.scene-casino-reel{min-height:100px}.scene-casino-reel strong{font-size:clamp(1.2rem,6vw,2rem)}.scene-casino-trail{font-size:.56rem}.scene-casino-head{top:3%}}
+.nuuh-meme-crop{display:block;background-image:url('/nuuh/susto-obvio.jpg');background-size:620% auto;background-position:93% 12%;background-repeat:no-repeat;background-color:#152132}
