@@ -46,7 +46,7 @@ export function SponsorBanner() {
       .then((data) => setUpdatedAt(data.updatedAt))
       .catch(() => {})
     refresh()
-    const timer = window.setInterval(refresh, 60_000)
+    const timer = window.setInterval(refresh, 600_000)
     return () => window.clearInterval(timer)
   }, [])
   useEffect(() => {
