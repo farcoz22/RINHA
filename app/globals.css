@@ -210,3 +210,42 @@
 .scene-avatar{filter:drop-shadow(2px 7px 5px #122c3440)}
 .scene-avatar .scene-plumbob{filter:hue-rotate(var(--avatar-hue)) drop-shadow(0 0 8px #32ffaf)}
 .scene-rotation-note{display:block;margin-top:.3rem;color:#a8becd;font-size:.65rem}
+
+/* Sorteio da Vila: cada casa, personagem e cartão participa da escolha. */
+.scene-village-controls{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.6rem;padding:.7rem 1.2rem;border-top:1px solid #38536b;background:#14253a}
+.scene-step-indicator{font-size:.75rem;font-weight:900;color:#8cf0d4}
+.scene-village-controls>div{display:flex;flex-wrap:wrap;gap:.45rem}
+.scene-village-controls button,.scene-finished button{padding:.45rem .75rem;border:1px solid #4b7080;border-radius:.55rem;background:#213d4d;color:#eafaf7;font-size:.68rem;font-weight:800;cursor:pointer}
+.scene-village-controls button[aria-pressed="true"]{background:#125953;color:#ddfff2;border-color:#60e7bb}
+.scene-village-controls button:hover:not(:disabled),.scene-finished button:hover{background:#326071}
+.scene-village-controls button:disabled{opacity:.5;cursor:default}
+.scene-team-switcher{display:flex;align-items:center;gap:.4rem;overflow-x:auto;padding:.5rem 1.2rem;background:#112539;border-top:1px solid #2c4a62;scrollbar-width:thin}
+.scene-team-switcher>span{flex:none;color:#8cb9c0;font-size:.66rem;font-weight:800;margin-right:.3rem}
+.scene-team-switcher button{flex:none;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:.35rem .6rem;border:1px solid #416977;border-radius:2rem;background:#183847;color:#ebf8f7;font-size:.7rem;font-weight:800;cursor:pointer}
+.scene-team-switcher button:hover:not(:disabled),.scene-team-switcher button[aria-pressed="true"]{background:#188273;border-color:#85f1d8}
+.scene-team-switcher button:disabled{cursor:default;opacity:.7}
+.scene-team-switcher small{color:#8de6d5;margin-left:.3rem}
+.scene-shell--village .scene-world--village .scene-home{cursor:pointer;padding:0;font:inherit;transition:transform .2s,filter .2s}
+.scene-shell--village .scene-world--village .scene-home:not(:disabled):hover,.scene-shell--village .scene-world--village .scene-home:not(:disabled):focus-visible{transform:translateY(-8px) scale(1.07);filter:drop-shadow(0 0 12px #6cffca);outline:none}
+.scene-shell--village .scene-world--village .scene-home:disabled{cursor:default;opacity:1}
+.scene-actor-choice{padding:0;border:0;background:none;cursor:pointer;border-radius:1rem;transition:transform .2s,filter .2s}
+.scene-actor-choice:not(:disabled):hover,.scene-actor-choice--active{transform:translateY(-9px) scale(1.08);filter:drop-shadow(0 0 13px #62ffda)}
+.scene-actor-choice:disabled{cursor:default}
+.scene-village-actors--ambient{pointer-events:none}
+.scene-village-result{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.5rem;padding:.8rem 1.2rem;background:#102337;border-top:1px solid #426072}
+.scene-village-result span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:.55rem .7rem;border:1px solid #416075;border-radius:.55rem;color:#d7f5ef;font-size:.73rem;font-weight:900;background:#173548}
+.scene-village-choices{padding:.85rem 1.2rem;background:#111e30;border-top:1px solid #37506a}
+.scene-choices-heading{display:flex;justify-content:space-between;gap:1rem;font-size:.78rem;font-weight:900;color:#eef9fa}
+.scene-choices-heading b{font-size:.7rem;color:#84dbc5}
+.scene-choice-list{display:flex;align-items:stretch;gap:.5rem;margin-top:.7rem;max-height:112px;overflow:auto;padding:.12rem .12rem .45rem}
+.scene-choice-list button{flex:0 0 auto;max-width:240px;border:1px solid #3f6174;border-radius:.65rem;background:#1a3445;padding:.6rem .8rem;color:#e6f2f2;font-size:.72rem;font-weight:800;cursor:pointer;text-align:left;white-space:normal;overflow-wrap:anywhere}
+.scene-choice-list button:hover:not(:disabled),.scene-choice-list button:focus-visible,.scene-choice-list .scene-choice--lit{background:#217e76;border-color:#8affdf;color:#fff;box-shadow:0 0 14px #39e2ba63}
+.scene-choice-list button:disabled{cursor:default}
+.scene-draw-button{display:block;margin-top:.6rem;padding:.6rem 1.1rem;border-radius:.65rem;background:linear-gradient(110deg,#36d9ae,#17a5d7);color:#061c2a;font-size:.78rem;font-weight:950;cursor:pointer}
+.scene-draw-button:disabled{opacity:.6;cursor:default}
+.scene-finished{display:flex;align-items:center;flex-wrap:wrap;gap:.65rem;padding-top:.65rem;font-size:.78rem}
+.scene-finished strong{color:#94f9d8}.scene-finished span{color:#b4ccda;overflow-wrap:anywhere}
+.scene-event{max-width:90%}.scene-event strong{overflow-wrap:anywhere}
+.scene-shell--village:fullscreen{overflow-y:auto;width:100vw;height:100vh;border-radius:0;background:#0d1c2b}
+.scene-shell--village:fullscreen .scene-world{height:min(63vh,640px)}
+@media(max-width:680px){.scene-village-controls,.scene-team-switcher{padding:.65rem}.scene-village-result,.scene-village-choices{padding:.65rem}.scene-village-result span{font-size:.65rem}.scene-choice-list{max-height:95px}.scene-event{font-size:.67rem}}

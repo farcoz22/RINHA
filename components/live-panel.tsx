@@ -10,7 +10,7 @@ import { Roulette, type RouletteSound, type WheelChoice } from "@/components/rou
 import { Ranking } from "@/components/ranking"
 import { NuuhSpotlight } from "@/components/nuuh-spotlight"
 import { getGameDescription, getPublicGameChoices } from "@/lib/roulette-games"
-import { AnimatedScenes } from "@/components/animated-scenes"
+import { AnimatedScenes, type VillageResult } from "@/components/animated-scenes"
 import type { SceneMode } from "@/lib/scene-model"
 
 const fetcher = (url: string) => fetch(url).then((response) => response.json() as Promise<LiveData>)
@@ -35,7 +35,7 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
     if (window.localStorage.getItem("rinha-roulette-auto") === "off") setAutoPlayRoulette(false)
   }, [])
   function changeSceneMode(next: SceneMode) {
-    if (next === "roulette" && next !== sceneMode) reset()
+    if (next !== sceneMode) reset()
     setSceneMode(next)
     window.localStorage.setItem("rinha-scene-mode", next)
   }
@@ -101,6 +101,14 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
     } else {
       setGame(choice)
     }
+  }
+
+  function handleVillageResult(result: VillageResult) {
+    setGroupId(result.groupId)
+    setTeamId(result.teamId)
+    setParticipantId(result.personId)
+    setGame(result.game)
+    setStage("game")
   }
 
   const nextStage: Stage | null = stage === "team" && selectedTeam
@@ -213,7 +221,7 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
             </>}
             {selectedTeam && <p className="mt-5 text-xs text-muted-foreground">Pessoas disponíveis na equipe: {teamPeople.length}. Pode voltar a uma etapa e girar novamente.</p>}
           </div>
-        </section> : <AnimatedScenes live={live} mode={sceneMode} />}
+        </section> : <AnimatedScenes live={live} mode={sceneMode} onVillageResult={handleVillageResult} />}
       </>) : <Ranking participants={live.participants} battleGroups={live.battleGroups} donations={live.recentDonations} />}
       <footer className="mt-2 border-t border-border pt-5 text-xs text-muted-foreground">18+ | Jogue com responsabilidade! · Atualização automática a cada 10 minutos</footer>
     </div>

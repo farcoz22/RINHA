@@ -1,9 +1,15 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { formatBRL } from "@/lib/format"
 import { makeActors, sceneTeams, type SceneActor } from "@/lib/scene-model"
 import type { LiveData } from "@/lib/types"
+import { getGameDescription, getPublicGameChoices } from "@/lib/roulette-games"
+import type { WheelChoice } from "@/components/roulette"
+
+type SceneTeam = ReturnType<typeof sceneTeams>[number]
+type VillagePhase = "team" | "person" | "game" | "finished"
+export type VillageResult = { groupId: string; teamId: string; personId: string; game: WheelChoice | null }
 
 function Avatar({ actor, activity = "idle", size = "normal" }: { actor: SceneActor; activity?: "idle" | "walk" | "duel"; size?: "normal" | "small" }) {
   const skin = ["#442c26", "#603c2e", "#79503b", "#966444", "#b7815a", "#ce9a71", "#e3b48d", "#f3d2aa"][actor.skinTone]
@@ -46,7 +52,172 @@ function Avatar({ actor, activity = "idle", size = "normal" }: { actor: SceneAct
   </div>
 }
 
-export function AnimatedScenes({ live, mode }: { live: LiveData; mode: "neighborhood" | "arena" }) {
+function VillageDraw({ live, actors, teams, onResult }: { live: LiveData; actors: SceneActor[]; teams: SceneTeam[]; onResult?: (value: VillageResult) => void }) {
+  const [phase, setPhase] = useState<VillagePhase>("team")
+  const [teamId, setTeamId] = useState<string | null>(null)
+  const [personId, setPersonId] = useState<string | null>(null)
+  const [game, setGame] = useState<WheelChoice | null>(null)
+  const [automatic, setAutomatic] = useState(true)
+  const [drawing, setDrawing] = useState(false)
+  const [highlight, setHighlight] = useState<string | null>(null)
+  const [round, setRound] = useState(0)
+  const [carousel, setCarousel] = useState(0)
+  const [requestedTeam, setRequestedTeam] = useState<string | null>(null)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const sceneRef = useRef<HTMLElement | null>(null)
+
+  useEffect(() => {
+    if (window.localStorage.getItem("rinha-village-auto") === "off") setAutomatic(false)
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current)
+      if (intervalRef.current) clearInterval(intervalRef.current)
+    }
+  }, [])
+  useEffect(() => {
+    const clock = window.setInterval(() => setCarousel((value) => value + 1), 3700)
+    return () => clearInterval(clock)
+  }, [])
+
+  const team = teams.find((item) => item.id === teamId) ?? null
+  const people = team?.actors ?? []
+  const person = people.find((item) => item.id === personId) ?? null
+  const participant = live.participants.find((item) => item.id === personId) ?? null
+  const games = useMemo(() => getPublicGameChoices(participant), [participant])
+  const gameDescription = getGameDescription(participant, game)
+  const activeIndex = team ? teams.findIndex((item) => item.id === team.id) : carousel % (teams.length || 1)
+  const visibleTeams = Array.from({ length: Math.min(4, teams.length) }, (_, index) => teams[(activeIndex + index) % teams.length])
+  const peopleStart = carousel % (people.length || 1)
+  const visiblePeople = people.length ? Array.from({ length: Math.min(4, people.length) }, (_, index) => people[(peopleStart + index) % people.length]) : []
+  const contribution = actors.reduce((total, actor) => total + actor.ticketAmount, 0)
+  const options: WheelChoice[] = phase === "team"
+    ? teams.map((item) => ({ id: item.id, label: item.name }))
+    : phase === "person"
+      ? people.map((item) => ({ id: item.id, label: item.displayName }))
+      : phase === "game" ? games : []
+  const phaseName = { team: "equipe", person: "pessoa", game: "jogo", finished: "resultado" }[phase]
+
+  function nextRandom(max: number) {
+    const values = new Uint32Array(1)
+    window.crypto.getRandomValues(values)
+    return Math.floor((values[0] / 2 ** 32) * max)
+  }
+  function groupFor(eventId: string) {
+    return live.battleGroups.find((group) => group.events.some((event) => event.id === eventId))?.id ?? "__solo__"
+  }
+  function finish(selectedTeamId: string, selectedPersonId: string, selectedGame: WheelChoice | null) {
+    setGame(selectedGame)
+    setPhase("finished")
+    onResult?.({ groupId: groupFor(selectedTeamId), teamId: selectedTeamId, personId: selectedPersonId, game: selectedGame })
+  }
+  function commit(choice: WheelChoice) {
+    if (phase === "team") {
+      const chosen = teams.find((item) => item.id === choice.id)
+      if (!chosen) return
+      setTeamId(chosen.id)
+      setPersonId(null)
+      setGame(null)
+      if (chosen.actors.length === 1) {
+        const only = chosen.actors[0]
+        setPersonId(only.id)
+        const publicGames = getPublicGameChoices(live.participants.find((item) => item.id === only.id) ?? null)
+        if (publicGames.length) setPhase("game")
+        else finish(chosen.id, only.id, null)
+      } else setPhase("person")
+    } else if (phase === "person" && team) {
+      const chosen = people.find((item) => item.id === choice.id)
+      if (!chosen) return
+      setPersonId(chosen.id)
+      const publicGames = getPublicGameChoices(live.participants.find((item) => item.id === chosen.id) ?? null)
+      if (publicGames.length) setPhase("game")
+      else finish(team.id, chosen.id, null)
+    } else if (phase === "game" && team && person) finish(team.id, person.id, choice)
+  }
+  function draw(forcedId?: string) {
+    if (drawing || phase === "finished" || !options.length) return
+    const snapshot = [...options]
+    const winner = forcedId ? snapshot.find((item) => item.id === forcedId) : snapshot[nextRandom(snapshot.length)]
+    if (!winner) return
+    setDrawing(true)
+    intervalRef.current = setInterval(() => setHighlight(snapshot[nextRandom(snapshot.length)].id), 120)
+    timerRef.current = setTimeout(() => {
+      if (intervalRef.current) clearInterval(intervalRef.current)
+      intervalRef.current = null
+      setHighlight(winner.id)
+      setDrawing(false)
+      commit(winner)
+    }, window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 220 : 2200)
+  }
+  function restart() {
+    if (timerRef.current) clearTimeout(timerRef.current)
+    if (intervalRef.current) clearInterval(intervalRef.current)
+    setDrawing(false)
+    setHighlight(null)
+    setTeamId(null)
+    setPersonId(null)
+    setGame(null)
+    setPhase("team")
+    setRound((value) => value + 1)
+  }
+  function chooseHouse(id: string) {
+    if (drawing) return
+    if (phase === "team") draw(id)
+    else {
+      restart()
+      setRequestedTeam(id)
+    }
+  }
+  useEffect(() => {
+    if (!requestedTeam || phase !== "team" || drawing) return
+    const id = requestedTeam
+    setRequestedTeam(null)
+    draw(id)
+  }, [requestedTeam, phase, drawing, teams])
+  useEffect(() => {
+    if (!automatic || drawing || !teams.length) return
+    const timer = window.setTimeout(() => {
+      if (phase === "finished") restart()
+      else draw()
+    }, phase === "finished" ? 7500 : 1200)
+    return () => clearTimeout(timer)
+  }, [automatic, drawing, phase, teamId, personId, round, teams, games])
+
+  return <section ref={sceneRef} className="scene-shell scene-shell--village" aria-label="Vila interativa para sorteio dos bilhetes">
+    <div className="scene-topbar"><div><span className="scene-overline">VILA DO NUUH · SORTEIO EM MOVIMENTO</span><h2>Equipe → pessoa → jogo</h2></div><span className="scene-online"><i /> FILA AO VIVO</span></div>
+    <div className="scene-village-controls">
+      <span className="scene-step-indicator">{drawing ? `Sorteando ${phaseName}...` : phase === "finished" ? "Sorteio concluído" : `Etapa ${phase === "team" ? 1 : phase === "person" ? 2 : 3}/3 · Escolha ou sorteie ${phaseName}`}</span>
+      <div>
+        <button type="button" onClick={() => { const enabled = !automatic; setAutomatic(enabled); window.localStorage.setItem("rinha-village-auto", enabled ? "on" : "off") }} aria-pressed={automatic}>{automatic ? "Automático: ligado" : "Automático: desligado"}</button>
+        <button type="button" onClick={() => { if (document.fullscreenElement) void document.exitFullscreen(); else void sceneRef.current?.requestFullscreen() }}>Tela cheia</button>
+        <button type="button" onClick={restart} disabled={drawing}>Novo sorteio</button>
+      </div>
+    </div>
+    {teams.length > 0 && <div className="scene-team-switcher" aria-label="Equipes da vila">
+      <span>Casas da vila</span>
+      {teams.map((item) => <button key={item.id} type="button" disabled={drawing} aria-pressed={teamId === item.id} onClick={() => chooseHouse(item.id)}>{item.name} <small>{item.actors.length}</small></button>)}
+    </div>}
+    {!teams.length ? <div className="scene-empty">Aguardando bilhetes. Quando entrarem na fila, as equipes vão ocupar as casas.</div> : <>
+      <div className="scene-world scene-world--village">
+        {visibleTeams.map((item, index) => <button key={item.id} type="button" className={`scene-home scene-home--${index + 1} ${item.id === teamId || highlight === item.id ? "scene-home--active" : ""}`} onClick={() => chooseHouse(item.id)} disabled={drawing} aria-label={`Escolher equipe ${item.name}, ${item.actors.length} bilhete(s)`}><span className="scene-home-sign">{item.name}</span></button>)}
+        {phase !== "team" && <div className="scene-village-actors" key={`${teamId}-${carousel}`}>
+          {visiblePeople.map((actor) => <button key={actor.id} className={`scene-actor-choice ${highlight === actor.id || personId === actor.id ? "scene-actor-choice--active" : ""}`} type="button" onClick={() => phase === "person" && draw(actor.id)} disabled={phase !== "person" || drawing} aria-label={`Escolher ${actor.displayName}`}><Avatar actor={actor} activity="walk" /></button>)}
+        </div>}
+        {phase === "team" && <div className="scene-village-actors scene-village-actors--ambient">{visibleTeams.flatMap((item) => item.actors.slice(0, 1)).map((actor) => <Avatar key={actor.id} actor={actor} activity="walk" />)}</div>}
+        <div className="scene-event" aria-live="polite">{phase === "finished" ? <><strong>{team?.name}</strong><span> · {person?.displayName}{game ? ` · ${game.label}` : " · sem jogo público"}</span></> : <><strong>{drawing ? "Sorteio em andamento" : "A vila está viva"}</strong><span> · clique em uma casa, personagem ou jogo</span></>}</div>
+      </div>
+      <div className="scene-village-result" aria-live="polite"><span>{team?.name ?? "1 · Equipe"}</span><span>{person?.displayName ?? "2 · Pessoa"}</span><span>{game?.label ?? (phase === "finished" ? "Sem jogo público" : "3 · Jogo")}</span></div>
+      <div className="scene-village-choices">
+        <div className="scene-choices-heading"><span>{phase === "team" ? "Escolha uma equipe" : phase === "person" ? `Pessoas de ${team?.name}` : phase === "game" ? `Jogos públicos de ${person?.displayName}` : "Resultado do sorteio"}</span><b>{phase === "team" ? `${teams.length} equipes` : phase === "person" ? `${people.length} bilhetes` : phase === "game" ? `${games.length} jogos` : "Concluído"}</b></div>
+        {phase === "finished" ? <div className="scene-finished"><strong>{person?.displayName}</strong><span>{team?.name} · {gameDescription || game?.label || "Sem jogo público disponível"}</span><button type="button" onClick={restart}>Sortear novamente</button></div> : <div className="scene-choice-list">{options.map((choice) => <button type="button" key={choice.id} disabled={drawing} className={highlight === choice.id ? "scene-choice--lit" : ""} onClick={() => draw(choice.id)}>{phase === "person" ? "◆ " : phase === "game" ? "▣ " : "⌂ "}{choice.label}{phase === "team" ? ` · ${teams.find((item) => item.id === choice.id)?.actors.length} bilhete(s)` : phase === "game" ? ` · ${getGameDescription(participant, choice) ?? ""}` : ""}</button>)}</div>}
+        {phase !== "finished" && <button type="button" className="scene-draw-button" disabled={drawing || !options.length} onClick={() => draw()}>{drawing ? "Sorteando..." : `Sortear ${phaseName}`}</button>}
+      </div>
+      <div className="scene-bottom"><div><span>NA CENA</span><b>{team?.name ?? visibleTeams[0]?.name}</b></div><div><span>BILHETES</span><b>{actors.length}</b></div><div><span>ENTRADAS DA FILA</span><b>{formatBRL(contribution)}</b></div><div><span>RODADA</span><b>{round + 1}</b></div></div>
+    </>}
+    <p className="scene-disclaimer">As casas, personagens e jogos fazem o sorteio visual. Campos sensíveis não participam. O sorteio não altera vencedores ou pagamentos.</p>
+  </section>
+}
+
+export function AnimatedScenes({ live, mode, onVillageResult }: { live: LiveData; mode: "neighborhood" | "arena"; onVillageResult?: (value: VillageResult) => void }) {
   const actors = useMemo(() => makeActors(live.participants, live.recentDonations), [live.participants, live.recentDonations])
   const teams = useMemo(() => sceneTeams(live.battleGroups, actors), [live.battleGroups, actors])
   const [tick, setTick] = useState(0)
@@ -57,31 +228,19 @@ export function AnimatedScenes({ live, mode }: { live: LiveData; mode: "neighbor
 
   const active = teams[tick % (teams.length || 1)]
   const next = teams[(tick + 1) % (teams.length || 1)]
-  const visibleTeams = Array.from({ length: Math.min(4, teams.length) }, (_, index) => teams[(tick + index) % teams.length])
   const teamRound = Math.floor(tick / (teams.length || 1))
   const current = active?.actors[teamRound % active.actors.length]
-  const visibleActors = active ? Array.from({ length: Math.min(4, active.actors.length) }, (_, index) => active.actors[(teamRound + index) % active.actors.length]) : []
   const rival = teams.length > 1
       ? next?.actors[teamRound % (next.actors.length || 1)]
       : active && active.actors.length > 1
       ? active.actors[(teamRound + 1) % active.actors.length]
       : null
   const contribution = actors.reduce((total, actor) => total + actor.ticketAmount, 0)
-  const sceneTitle = mode === "neighborhood" ? "Vila da fila" : "Arena dos bilhetes"
+  if (mode === "neighborhood") return <VillageDraw live={live} actors={actors} teams={teams} onResult={onVillageResult} />
 
-  return <section className="scene-shell" aria-label={`${sceneTitle}, animação automática dos bilhetes`}>
-    <div className="scene-topbar"><div><span className="scene-overline">SIMULAÇÃO AO VIVO · SEM CLIQUES</span><h2>{sceneTitle}</h2></div><span className="scene-online"><i /> ATUALIZAÇÃO AUTOMÁTICA</span></div>
-    {actors.length === 0 ? <div className="scene-empty">Aguardando bilhetes. Os personagens entrarão na cena quando houver pessoas na fila.</div> : mode === "neighborhood" ? <div className="scene-world scene-world--village">
-      <div className="scene-sky"><span className="scene-sun" /><span className="scene-cloud" /><span className="scene-cloud scene-cloud--second" /></div>
-      <div className="scene-hills" /><div className="scene-ground" /><div className="scene-road" />
-      {visibleTeams.map((team, index) => <div key={team.id} className={`scene-home scene-home--${index + 1} ${team.id === active?.id ? "scene-home--active" : ""}`}>
-        <div className="scene-home-roof" /><span className="scene-home-window" /><span className="scene-home-door" /><span className="scene-home-sign">{team.name}</span><small>{team.actors.length} {team.actors.length === 1 ? "bilhete" : "bilhetes"}</small>
-      </div>)}
-      <div className="scene-village-actors" key={`${active?.id}-${tick}`}>
-        {visibleActors.map((actor) => <Avatar key={actor.id} actor={actor} activity="walk" />)}
-      </div>
-      <div className="scene-event" aria-live="polite"><strong>{current?.displayName}</strong><span> saiu de {active?.name} para explorar a vila · nível {current?.level}</span></div>
-    </div> : <div className="scene-world scene-world--arena">
+  return <section className="scene-shell" aria-label="Arena dos bilhetes, animação automática dos bilhetes">
+    <div className="scene-topbar"><div><span className="scene-overline">SIMULAÇÃO AO VIVO · SEM CLIQUES</span><h2>Arena dos bilhetes</h2></div><span className="scene-online"><i /> ATUALIZAÇÃO AUTOMÁTICA</span></div>
+    {actors.length === 0 ? <div className="scene-empty">Aguardando bilhetes. Os personagens entrarão na cena quando houver pessoas na fila.</div> : <div className="scene-world scene-world--arena">
       <div className="scene-arena-grid" /><div className="scene-arena-glow" />
       <div className="scene-arena-banner">CONFRONTO VISUAL <span>Rodada {String(tick + 1).padStart(2, "0")}</span></div>
       <div className="scene-fighter scene-fighter--left" key={`${current?.id}-${tick}`}><Avatar actor={current ?? actors[0]} activity="duel" /><strong>{active?.name}</strong></div>
