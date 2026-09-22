@@ -1,8 +1,8 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo, useRef, useState } from "react"
 import useSWR from "swr"
-import { AlertTriangle, Check, RefreshCw, RotateCcw, Trophy } from "lucide-react"
+import { AlertTriangle, Check, Expand, RefreshCw, RotateCcw, Trophy } from "lucide-react"
 import type { LiveData } from "@/lib/types"
 import { SiteHeader } from "@/components/site-header"
 import { Hero } from "@/components/hero"
@@ -32,6 +32,7 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
   const [game, setGame] = useState<WheelChoice | null>(null)
   const [sound, setSound] = useState<RouletteSound>("classic")
   const [spinning, setSpinning] = useState(false)
+  const rouletteStageRef = useRef<HTMLElement | null>(null)
 
   const groups = useMemo(() =>
     live.battleGroups.map((group) => ({
@@ -113,10 +114,11 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
       </div>
 
       {tab === "ao-vivo" ? (
-        <section className="grid gap-6 lg:grid-cols-2" id="fila">
+        <section ref={rouletteStageRef} className="roulette-stage grid gap-6 lg:grid-cols-2" id="fila">
           <div className="rounded-3xl border border-border bg-card/60 p-6 backdrop-blur">
             <p className="text-center text-xs font-semibold tracking-[0.3em] text-accent uppercase">Roleta do Nuuhzão</p>
             <h2 className="mb-4 mt-1 text-center text-2xl font-bold">Quem vai jogar agora?</h2>
+            <button type="button" onClick={() => { if (document.fullscreenElement) void document.exitFullscreen(); else void rouletteStageRef.current?.requestFullscreen() }} className="mb-3 flex items-center gap-2 rounded-lg border border-amber-400/30 px-3 py-1.5 text-xs font-semibold text-amber-200 transition hover:bg-amber-400/10"><Expand className="size-3.5" /> Tela cheia para a live</button>
             {groups.length > 1 && <label className="mb-4 flex items-center justify-center gap-2 text-sm text-muted-foreground">
               Confronto
               <select value={selectedGroup?.id ?? ""} onChange={(event) => chooseGroup(event.target.value)} disabled={spinning} className="max-w-[65%] rounded-lg border border-input bg-background px-3 py-2 text-foreground">
