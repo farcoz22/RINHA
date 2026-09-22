@@ -7,7 +7,7 @@ import { PasswordDialog } from "@/components/password-dialog"
 const slides = [
   { kicker: "ESPAÇO DA BET ATUAL", title: "A próxima rodada começa aqui", text: "Banner da parceira da live", className: "sponsor-slide--red" },
   { kicker: "INTERVALO DA LIVE", title: "A mesa está preparada", text: "Arte da bet pode entrar neste espaço", className: "sponsor-slide--gold" },
-  { kicker: "CONFRONTO DO DUKOTH", title: "Quem sai na frente?", text: "Área reservada para a marca parceira", className: "sponsor-slide--teal" },
+  { kicker: "HUNT DO DUKOTH", title: "Quem leva o loot?", text: "Área reservada para a marca parceira", className: "sponsor-slide--teal" },
 ]
 
 async function prepareBanner(file: File) {
@@ -92,7 +92,7 @@ export function SponsorBanner() {
     <aside className={`sponsor-banner ${slide.className} ${updatedAt ? "sponsor-banner--active" : ""}`} aria-label="Espaço para a bet parceira">
       {updatedAt ? <img src={`/api/sponsor/image?v=${encodeURIComponent(updatedAt)}`} alt="Banner enviado para a bet da live" className="sponsor-banner__uploaded" /> : <>
         <div className="sponsor-banner__content"><span className="sponsor-banner__label">{slide.kicker}</span><strong>{slide.title}</strong><span>{slide.text}</span></div>
-        <img src="/dukoth/mark.svg" className="sponsor-banner__face" alt="Marca do painel Dukoth" />
+        <img src="/dukoth/twitch-banner.webp" className="sponsor-banner__face sponsor-banner__face--dukoth" alt="Personagem do banner oficial do Dukoth" />
       </>}
       <input ref={picker} type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" aria-label="Escolher imagem do patrocinador" onChange={(event) => void selectImage(event.target.files?.[0])} />
       <button type="button" onClick={() => picker.current?.click()} className="sponsor-banner__upload" aria-label={updatedAt ? "Trocar imagem do patrocinador" : "Enviar imagem do patrocinador"} title="Enviar imagem da bet"><ImagePlus size={14} /> <span>{updatedAt ? "Trocar imagem" : "Subir imagem"}</span></button>

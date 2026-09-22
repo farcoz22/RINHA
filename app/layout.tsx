@@ -10,9 +10,9 @@ const jetbrainsMono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Batalhas do Dukoth — Ao vivo',
+  title: 'Guild do Dukoth — Ao vivo',
   description:
-    'Painel das batalhas do Dukoth: sorteio, filas, pote e pagamentos via Rhyno.',
+    'Painel medieval da comunidade do Dukoth: sorteio, filas, pote e pagamentos via Rhyno.',
   icons: {
     icon: '/dukoth/mark.svg',
   },
@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   colorScheme: 'dark',
-  themeColor: '#0e1626',
+  themeColor: '#071421',
 }
 
 export default function RootLayout({

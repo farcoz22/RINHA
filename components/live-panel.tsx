@@ -180,15 +180,15 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
       {tab === "ao-vivo" ? (<>
         <nav className="scene-mode-switch" aria-label="Escolher visualização da live">
           <span>VISUAL DA LIVE</span>
-          <button type="button" aria-pressed={sceneMode === "neighborhood"} onClick={() => changeSceneMode("neighborhood")}>Cassino tático</button>
-          <button type="button" aria-pressed={sceneMode === "squad"} onClick={() => changeSceneMode("squad")}>Sala dos bilhetes</button>
-          <button type="button" aria-pressed={sceneMode === "arena"} onClick={() => changeSceneMode("arena")}>Confronto</button>
-          <button type="button" aria-pressed={sceneMode === "roulette"} onClick={() => changeSceneMode("roulette")}>Roleta</button>
+          <button type="button" aria-pressed={sceneMode === "neighborhood"} onClick={() => changeSceneMode("neighborhood")}>Guild Hall</button>
+          <button type="button" aria-pressed={sceneMode === "squad"} onClick={() => changeSceneMode("squad")}>Roda da guild</button>
+          <button type="button" aria-pressed={sceneMode === "arena"} onClick={() => changeSceneMode("arena")}>Arena PvP</button>
+          <button type="button" aria-pressed={sceneMode === "roulette"} onClick={() => changeSceneMode("roulette")}>Roleta rúnica</button>
         </nav>
         {sceneMode === "roulette" ? <section ref={rouletteStageRef} className="roulette-stage grid gap-6 lg:grid-cols-2" id="fila">
           <div className="rounded-3xl border border-border bg-card/60 p-6 backdrop-blur">
-            <p className="text-center text-xs font-semibold tracking-[0.3em] text-accent uppercase">Roleta do Dukoth</p>
-            <h2 className="mb-4 mt-1 text-center text-2xl font-bold">Quem vai jogar agora?</h2>
+            <p className="text-center text-xs font-semibold tracking-[0.3em] text-accent uppercase">Roleta rúnica do Dukoth</p>
+            <h2 className="mb-4 mt-1 text-center text-2xl font-bold">Quem vai para a próxima hunt?</h2>
             <button type="button" onClick={() => { if (document.fullscreenElement) void document.exitFullscreen(); else void rouletteStageRef.current?.requestFullscreen() }} className="mb-3 flex items-center gap-2 rounded-lg border border-amber-400/30 px-3 py-1.5 text-xs font-semibold text-amber-200 transition hover:bg-amber-400/10"><Expand className="size-3.5" /> Tela cheia para a live</button>
             <button type="button" onClick={toggleRouletteAuto} aria-pressed={autoPlayRoulette} className="mb-3 ml-2 rounded-lg border border-amber-400/30 px-3 py-1.5 text-xs font-semibold text-amber-200 transition hover:bg-amber-400/10">Giro automático: {autoPlayRoulette ? "ligado" : "desligado"}</button>
             {groups.length > 1 && <label className="mb-4 flex items-center justify-center gap-2 text-sm text-muted-foreground">

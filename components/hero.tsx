@@ -15,13 +15,13 @@ export function Hero({ selectedTeam, selectedName, selectedGame, stats, updatedA
       <div className="mx-auto max-w-3xl text-center">
         <p className="flex items-center justify-center gap-2 text-xs font-semibold tracking-[0.35em] text-muted-foreground uppercase">
           <span className="rhyno-live-dot size-2 rounded-full bg-emerald-400" />
-          Testa a sorte :D
+          High Onion Corporation
         </p>
         <div className="mt-4 flex items-center justify-center gap-3 sm:gap-5">
-          <img src="/dukoth/mark.svg" alt="Marca do painel Dukoth" className="size-16 shrink-0 rotate-[-8deg] rounded-2xl border-2 border-amber-400 shadow-lg shadow-amber-400/30 sm:size-24" />
-          <h1 className="text-balance text-4xl font-extrabold tracking-tight sm:text-7xl">Batalhas do Dukoth</h1>
+          <span className="dukoth-emblem-small"><img src="/dukoth/twitch-banner.webp" alt="Personagem do banner oficial do Dukoth" /></span>
+          <h1 className="text-balance text-4xl font-extrabold tracking-tight sm:text-7xl">Guild do Dukoth</h1>
         </div>
-        <p className="mt-3 text-muted-foreground">Sorteie a equipe, a pessoa e o jogo da vez.</p>
+        <p className="mt-3 text-muted-foreground">Sorteie a party, o aventureiro e a hunt da vez.</p>
 
         <div className="mt-6 flex items-center justify-center gap-3">
           <span className="inline-flex items-center gap-2 rounded-full bg-primary/20 px-3 py-1 text-xs font-bold text-primary ring-1 ring-primary/40">
@@ -36,10 +36,10 @@ export function Hero({ selectedTeam, selectedName, selectedGame, stats, updatedA
         <div className="mt-6 rounded-2xl border border-border bg-background/50 p-6">
           <p className="text-sm text-muted-foreground">Resultado do sorteio</p>
           <p className="mt-1 text-balance text-3xl font-extrabold sm:text-4xl">
-            {selectedName ?? selectedTeam ?? "Aguardando a roleta"}
+            {selectedName ?? selectedTeam ?? "Aguardando as runas"}
           </p>
           <p className="mt-2 text-sm text-muted-foreground">
-            {[selectedTeam, selectedGame].filter(Boolean).join(" · ") || "Comece sorteando uma equipe."}
+            {[selectedTeam, selectedGame].filter(Boolean).join(" · ") || "Comece sorteando uma party."}
           </p>
         </div>
       </div>

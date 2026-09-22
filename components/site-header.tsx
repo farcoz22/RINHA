@@ -5,10 +5,10 @@ export function SiteHeader() {
     <header className="rounded-3xl border border-border bg-card/70 px-4 py-3 backdrop-blur sm:px-6">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <img src="/dukoth/mark.svg" alt="Marca do painel Dukoth" className="size-13 shrink-0 rounded-2xl ring-2 ring-amber-400/70" />
+          <span className="dukoth-emblem-mini"><img src="/dukoth/twitch-banner.webp" alt="Personagem do banner oficial do Dukoth" /></span>
           <div className="leading-tight">
-            <p className="text-sm font-bold tracking-tight sm:text-base">Batalhas do Dukoth</p>
-            <p className="text-xs text-muted-foreground">Painel ao vivo da live</p>
+            <p className="text-sm font-bold tracking-tight sm:text-base">High Onion Corporation</p>
+            <p className="text-xs text-muted-foreground">Guild do Dukoth · painel ao vivo</p>
           </div>
         </div>
 

@@ -12,56 +12,41 @@ type VillagePhase = "team" | "person" | "game" | "finished"
 export type VillageResult = { groupId: string; teamId: string; personId: string; game: WheelChoice | null }
 
 function Avatar({ actor, activity = "idle", size = "normal" }: { actor: SceneActor; activity?: "idle" | "walk" | "duel"; size?: "normal" | "small" }) {
-  const skin = ["#442c26", "#603c2e", "#79503b", "#966444", "#b7815a", "#ce9a71", "#e3b48d", "#f3d2aa"][actor.skinTone]
-  const hair = ["#1f2029", "#453126", "#6d4332", "#a77545", "#d8bd72", "#b46242", "#433f70", "#d3d8df"][actor.hairColor]
-  const shirt = ["#35bfb1", "#df8271", "#9187dc", "#ebbf67", "#6baaeb", "#d179a9", "#8dc36e", "#b0a799"][actor.outfit]
-  const trousers = ["#252c49", "#355370", "#69544b", "#536454", "#4e3c5b", "#222c32"][actor.pants]
-  const hairPaths = [
-    "M32 38 Q29 10 52 14 Q84 8 79 42 Q70 24 47 30Z",
-    "M31 38 Q30 20 47 13 Q75 1 80 33 L77 49 Q65 24 39 35Z",
-    "M33 40 Q35 19 51 19 Q75 14 79 37 Q69 24 46 32Z",
-    "M33 38 Q32 15 56 14 Q82 13 77 42 Q67 27 45 31Z",
-    "M31 40 Q25 29 34 19 Q43 9 53 18 Q64 6 74 19 Q87 22 78 42 Q63 27 46 34Z",
-    "M30 42 Q25 18 50 13 Q81 7 81 42 L79 79 Q71 70 74 36 Q54 27 37 37 L36 76 Q25 65 30 42Z",
-    "M32 35 Q38 13 60 17 Q78 17 79 34 Q59 28 32 35Z",
-    "M30 42 Q30 18 52 14 Q82 11 79 39 Q61 24 40 34Z",
-  ]
-  return <div className={`scene-avatar scene-avatar--${activity} ${size === "small" ? "scene-avatar--small" : ""}`} style={{ "--avatar-hue": `${actor.hue}deg`, "--avatar-delay": `${-((actor.hue % 13) / 8)}s` } as React.CSSProperties} aria-label={`${actor.displayName}, personagem do bilhete na equipe ${actor.team}`}>
-    <span className="scene-plumbob" aria-hidden="true" />
-    <svg viewBox="0 0 110 164" role="img" aria-label={`Personagem de ${actor.displayName}`}>
-      <ellipse cx="55" cy="157" rx="30" ry="5" fill="#0a182950" />
-      <path d="M42 113 L40 151 L54 151 L58 114 M61 113 L65 151 L80 151 L73 108" stroke={trousers} strokeWidth="15" strokeLinecap="round" />
-      <path d="M36 66 Q53 55 75 67 L78 116 Q55 125 34 115Z" fill={shirt} stroke="#1c3044" strokeWidth="3" />
-      {actor.outfit % 2 === 0 ? <path d="M47 62 L55 79 L64 62 M54 78 L54 117" fill="none" stroke="#fff9" strokeWidth="3" /> : <path d="M38 72 Q55 83 73 72 M42 95 L68 95" fill="none" stroke="#24243f88" strokeWidth="4" />}
-      <path d="M35 71 Q20 81 25 110 M75 70 Q91 85 84 109" fill="none" stroke={skin} strokeWidth="12" strokeLinecap="round" />
-      {actor.hairstyle === 7 && <path d="M75 28 Q104 39 89 71" fill="none" stroke={hair} strokeWidth="13" strokeLinecap="round" />}
-      <circle cx="55" cy="43" r="23" fill={skin} stroke="#473129" strokeWidth="2" />
-      {actor.hairstyle === 2 && <circle cx="57" cy="13" r="13" fill={hair} />}
-      <path d={hairPaths[actor.hairstyle]} fill={hair} />
-      {actor.hairstyle === 3 && <path d="M34 33 Q24 61 32 77 M76 34 Q89 65 80 78" fill="none" stroke={hair} strokeWidth="7" strokeLinecap="round" />}
-      {actor.accessory === 1 && <path d="M37 42 H53 M58 42 H74 M52 42 H59" fill="none" stroke="#142935" strokeWidth="3" />}
-      {actor.accessory === 2 && <circle cx="76" cy="58" r="4" fill="#f6d47b" />}
-      {actor.accessory === 3 && <path d="M35 29 Q54 23 77 29" fill="none" stroke="#fddeb6" strokeWidth="4" />}
-      {actor.accessory === 4 && <path d="M29 27 Q46 6 69 13 L83 25 Q56 22 29 27Z" fill="#273b50" stroke="#bedfe2" strokeWidth="2" />}
-      <circle cx="47" cy="45" r="2" fill="#263040" /><circle cx="64" cy="45" r="2" fill="#263040" />
-      <path d="M49 55 Q56 60 63 55" stroke="#704c40" fill="none" strokeWidth="2" />
-      <path d="M28 106 L28 119 M85 106 L85 119" stroke={skin} strokeWidth="7" strokeLinecap="round" />
-      <path d="M40 151 L54 151 M66 151 L81 151" stroke="#151d2b" strokeWidth="9" strokeLinecap="round" />
+  const skin = ["#55301f", "#70442c", "#8a5839", "#a86e47", "#c0875c", "#d9a77d", "#eac29a", "#f2d5af"][actor.skinTone]
+  const armor = ["#247d8f", "#9e3b34", "#65488f", "#bf7e22", "#2b58a0", "#914c78", "#4e7e37", "#696b70"][actor.outfit]
+  const trim = ["#79efff", "#ffbf68", "#b994ff", "#f6e080"][actor.hairColor % 4]
+  const vocation = ["KNIGHT", "PALADIN", "DRUID", "SORCERER"][actor.outfit % 4]
+  return <div className={`scene-avatar scene-avatar--${activity} scene-avatar--vocation-${actor.outfit % 4} ${size === "small" ? "scene-avatar--small" : ""}`} style={{ "--avatar-hue": `${actor.hue}deg`, "--avatar-delay": `${-((actor.hue % 13) / 8)}s` } as React.CSSProperties} aria-label={`${actor.displayName}, aventureiro do bilhete na equipe ${actor.team}`}>
+    <span className="scene-rune" aria-hidden="true">✦</span>
+    <svg viewBox="0 0 96 128" role="img" aria-label={`Aventureiro de ${actor.displayName}`} shapeRendering="crispEdges">
+      <ellipse cx="48" cy="119" rx="31" ry="7" fill="#04101bbb" />
+      <path d="M25 53 16 103 48 117 80 103 71 53Z" fill="#101b2a" stroke={trim} strokeWidth="4" />
+      <path d="M30 57H66L72 102 48 112 24 102Z" fill={armor} />
+      <path d="M35 80H61M48 58v48" stroke={trim} strokeWidth="4" />
+      <path d="M31 104 26 120H43L48 108 53 120H70L65 104Z" fill="#172539" stroke="#05090e" strokeWidth="3" />
+      <rect x="29" y="24" width="38" height="35" fill={skin} stroke="#070b10" strokeWidth="4" />
+      <path d="M25 28 33 13H63L71 28 63 22H34Z" fill={armor} stroke={trim} strokeWidth="3" />
+      <rect x="36" y="37" width="7" height="5" fill="#eafcff" /><rect x="55" y="37" width="7" height="5" fill="#eafcff" />
+      {actor.outfit % 4 === 0 && <><path d="M17 58 5 88 20 96 28 69Z" fill="#6f4b24" stroke="#e7bf65" strokeWidth="4" /><path d="M70 61 89 45" stroke="#d8e8ed" strokeWidth="5" /></>}
+      {actor.outfit % 4 === 1 && <><path d="M22 63 6 37M7 37l4 36" stroke="#d7aa5d" strokeWidth="4" /><path d="m71 61 17 26" stroke="#dde9f0" strokeWidth="4" /></>}
+      {actor.outfit % 4 === 2 && <><path d="M24 61 8 93M8 93l-3-13m3 13 13-5" stroke="#79e6a0" strokeWidth="5" /><circle cx="8" cy="76" r="7" fill="#64e0a0" /></>}
+      {actor.outfit % 4 === 3 && <><path d="M72 62 87 94" stroke="#c398f8" strokeWidth="5" /><circle cx="86" cy="78" r="8" fill="#7fcfff" /></>}
     </svg>
+    <span className="scene-vocation">{vocation}</span>
     <span className="scene-avatar-name">{actor.displayName}</span>
   </div>
 }
 
 function AgentPortrait({ actor, frame = 0, small = false }: { actor: SceneActor; frame?: number; small?: boolean }) {
-  return <div className={`scene-agent-portrait ${small ? "scene-agent-portrait--small" : ""}`} style={{ backgroundPosition: `${frame % 2 ? 100 : 0}% ${frame > 1 ? 100 : 0}%` }} role="img" aria-label={`Agente tático original representando o bilhete de ${actor.displayName}`}><span>{actor.displayName}</span></div>
+  return <div className={`scene-agent-portrait ${small ? "scene-agent-portrait--small" : ""}`} data-frame={frame % 4} role="img" aria-label={`Aventureiro de fantasia representando o bilhete de ${actor.displayName}`}><Avatar actor={actor} activity={frame % 2 ? "walk" : "idle"} size={small ? "small" : "normal"} /></div>
 }
 
 const squadLines = [
-  "Bora abrir a próxima rinha?",
-  "Quem vai jogar agora?",
-  "Meu bilhete entrou na sala!",
-  "Hoje tem sorteio?",
-  "Essa rodada vai ser minha!",
+  "Partiu hunt com o Dukoth?",
+  "Quem vai pra cave agora?",
+  "Meu bilhete entrou na guild!",
+  "Drop raro hoje?",
+  "Essa rodada é da minha pt!",
 ]
 
 function VillageDraw({ live, actors, teams, onResult, variant = "casino" }: { live: LiveData; actors: SceneActor[]; teams: SceneTeam[]; onResult?: (value: VillageResult) => void; variant?: "casino" | "squad" }) {
@@ -201,11 +186,11 @@ function VillageDraw({ live, actors, teams, onResult, variant = "casino" }: { li
   }, [automatic, drawing, phase, teamId, personId, round, teams, games])
 
   const focus = phase === "finished" ? (gameDescription || game?.label || person?.displayName) : drawing ? options.find((item) => item.id === highlight)?.label : phase === "team" ? "Aguardando equipe" : phase === "person" ? "Aguardando pessoa" : "Aguardando jogo"
-  return <section ref={sceneRef} className={`scene-shell scene-shell--village ${variant === "squad" ? "scene-shell--squad" : "scene-shell--casino"}`} aria-label={variant === "squad" ? "Sala tática interativa dos bilhetes" : "Mesa de sorteio tático dos bilhetes"}>
-    <div className="scene-topbar"><div><span className="scene-overline">BATALHAS DO DUKOTH · {variant === "squad" ? "SALA DA COMUNIDADE" : "MESA DE SORTEIO"}</span><h2>{variant === "squad" ? "Sala dos bilhetes" : "Confronto & sorteio"}</h2></div><span className="scene-online"><i /> AO VIVO</span></div>
+  return <section ref={sceneRef} className={`scene-shell scene-shell--village ${variant === "squad" ? "scene-shell--squad" : "scene-shell--casino"}`} aria-label={variant === "squad" ? "Roda dos aventureiros da fila" : "Guild Hall do sorteio"}>
+    <div className="scene-topbar"><div><span className="scene-overline">HIGH ONION CORPORATION · {variant === "squad" ? "RODA DOS AVENTUREIROS" : "GUILD HALL"}</span><h2>{variant === "squad" ? "Roda da guild" : "Sorteio da hunt"}</h2></div><span className="scene-online"><i /> ONLINE</span></div>
     {variant === "squad" ? <div className="scene-squad-stage">
       <div className="scene-squad-grid" aria-hidden="true" />
-      <div className="scene-casino-head"><span>◈ {drawing ? "ELENCO EM MOVIMENTO" : phase === "finished" ? "RESULTADO DEFINIDO" : "SALA ABERTA"}</span><span>RODADA {String(round + 1).padStart(2, "0")}</span></div>
+      <div className="scene-casino-head"><span>✦ {drawing ? "RUNAS EM MOVIMENTO" : phase === "finished" ? "AVENTUREIRO ESCOLHIDO" : "GUILD ABERTA"}</span><span>HUNT {String(round + 1).padStart(2, "0")}</span></div>
       <div className="scene-squad-platform" aria-hidden="true"><span /></div>
       {squadRoster.map((actor, index) => {
         const selected = highlight === (phase === "team" ? actor.eventId : actor.id) || person?.id === actor.id || (phase === "team" && team?.id === actor.eventId)
@@ -223,13 +208,13 @@ function VillageDraw({ live, actors, teams, onResult, variant = "casino" }: { li
       </div>
       <div className="scene-squad-status">{actors.length ? `${actors.length} bilhetes na sala · clique em um personagem ou use o sorteio` : "Aguardando os bilhetes chegarem à sala"}</div>
     </div> : <div className="scene-casino-stage">
-      <div className="scene-casino-head"><span>◈ {phase === "finished" ? "RESULTADO REVELADO" : drawing ? "SORTEIO EM CURSO" : "MESA ABERTA"}</span><span>RODADA {String(round + 1).padStart(2, "0")}</span></div>
+      <div className="scene-casino-head"><span>✦ {phase === "finished" ? "DESTINO REVELADO" : drawing ? "RUNAS EM MOVIMENTO" : "GUILD HALL ABERTA"}</span><span>HUNT {String(round + 1).padStart(2, "0")}</span></div>
       <div className="scene-casino-center" aria-live="polite" aria-atomic="true">
         <span className="scene-casino-kicker">{phase === "finished" ? "ESCOLHIDO" : drawing ? `SORTEANDO ${phaseName.toUpperCase()}` : `ETAPA ${phase === "team" ? 1 : phase === "person" ? 2 : 3} / 3 · ${phaseName.toUpperCase()}`}</span>
         <div className={`scene-casino-reel ${drawing ? "scene-casino-reel--rolling" : ""} ${phase === "finished" ? "scene-casino-reel--won" : ""}`}><span className="scene-casino-pointer">▼</span><strong key={`${phase}-${focus}`}>{focus}</strong><span className="scene-casino-pointer">▲</span></div>
         <div className="scene-casino-trail"><span>{team?.name ?? "EQUIPE ?"}</span><span>✦</span><span>{person?.displayName ?? "PESSOA ?"}</span><span>✦</span><span>{game?.label ?? (phase === "finished" ? "SEM JOGO PÚBLICO" : "JOGO ?")}</span></div>
       </div>
-      <div className="scene-casino-floor">{drawing ? "◆ ◆ ◆ ◆ ◆" : phase === "finished" ? "✦ BATALHA DEFINIDA ✦" : "PRONTO PARA O SORTEIO"}</div>
+      <div className="scene-casino-floor">{drawing ? "✦ ✦ ✦ ✦ ✦" : phase === "finished" ? "✦ PARTY DEFINIDA ✦" : "RUNAS PRONTAS PARA O SORTEIO"}</div>
     </div>}
     <div className="scene-village-controls"><span className="scene-step-indicator">{drawing ? `Sorteando ${phaseName}...` : phase === "finished" ? "Resultado pronto para a live" : `Escolha ou sorteie ${phaseName}`}</span><div>
       <button type="button" onClick={() => setAutomatic((value) => !value)} aria-pressed={automatic}>{automatic ? "Automático: ligado" : "Automático: desligado"}</button>
@@ -245,7 +230,7 @@ function VillageDraw({ live, actors, teams, onResult, variant = "casino" }: { li
       <div className="scene-team-switcher" aria-label="Escolher equipe diretamente"><span>EQUIPES</span>{teams.map((item) => <button key={item.id} type="button" disabled={drawing} aria-pressed={teamId === item.id} onClick={() => chooseHouse(item.id)}>{item.name} <small>{item.actors.length}</small></button>)}</div>
       <div className="scene-bottom"><div><span>EM DESTAQUE</span><b>{team?.name ?? visibleTeams[0]?.name}</b></div><div><span>BILHETES</span><b>{actors.length}</b></div><div><span>ENTRADAS DA FILA</span><b>{formatBRL(contribution)}</b></div><div><span>RODADA</span><b>{round + 1}</b></div></div>
     </> : <div className="scene-empty">Aguardando bilhetes para abrir a mesa de sorteio.</div>}
-    <p className="scene-disclaimer">Confronto visual com agentes originais. Campos sensíveis ficam ocultos. O sorteio não altera vencedores ou pagamentos.</p>
+    <p className="scene-disclaimer">Aventureiros ilustrativos em pixel art. Campos sensíveis ficam ocultos. O sorteio não altera vencedores ou pagamentos.</p>
   </section>
 }
 
@@ -271,18 +256,18 @@ export function AnimatedScenes({ live, mode, onVillageResult }: { live: LiveData
   if (mode === "neighborhood") return <VillageDraw live={live} actors={actors} teams={teams} onResult={onVillageResult} />
   if (mode === "squad") return <VillageDraw live={live} actors={actors} teams={teams} onResult={onVillageResult} variant="squad" />
 
-  return <section className="scene-shell" aria-label="Arena dos bilhetes, animação automática dos bilhetes">
-    <div className="scene-topbar"><div><span className="scene-overline">AGENTES ORIGINAIS · CONFRONTO VISUAL</span><h2>Confronto tático</h2></div><span className="scene-online"><i /> CENA AUTOMÁTICA</span></div>
-    {actors.length === 0 ? <div className="scene-empty">Aguardando bilhetes. Os agentes entrarão na cena quando houver pessoas na fila.</div> : <div className="scene-world scene-world--arena">
+  return <section className="scene-shell" aria-label="Arena PvP dos bilhetes">
+    <div className="scene-topbar"><div><span className="scene-overline">HIGH ONION CORPORATION · PVP</span><h2>Arena dos aventureiros</h2></div><span className="scene-online"><i /> CENA AUTOMÁTICA</span></div>
+    {actors.length === 0 ? <div className="scene-empty">Aguardando bilhetes. Os aventureiros entrarão na arena quando houver pessoas na fila.</div> : <div className="scene-world scene-world--arena">
       <div className="scene-arena-grid" /><div className="scene-arena-glow" />
-      <div className="scene-arena-banner">CONFRONTO VISUAL <span>Rodada {String(tick + 1).padStart(2, "0")}</span></div>
+      <div className="scene-arena-banner">ARENA PVP <span>Round {String(tick + 1).padStart(2, "0")}</span></div>
       <div className="scene-fighter scene-fighter--left" key={`${current?.id}-${tick}`}><AgentPortrait actor={current ?? actors[0]} frame={Math.max(0, actors.findIndex((actor) => actor.id === current?.id)) % 4} /><strong>{active?.name}</strong></div>
       <div className="scene-impact">VS<span>✦</span></div>
-      <div className="scene-fighter scene-fighter--right" key={`${rival?.id}-${tick}`}>{rival ? <AgentPortrait actor={rival} frame={Math.max(0, actors.findIndex((actor) => actor.id === rival.id)) % 4} /> : <div className="scene-practice-target" aria-label="Alvo de treino">◎</div>}<strong>{rival ? next?.name : "TREINO"}</strong></div>
-      <div className="scene-arena-feed"><img src="/dukoth/mark.svg" alt="Marca do painel Dukoth" className="size-8 rounded-md" />{current?.displayName} <span>{rival ? "enfrenta" : "treina com"}</span> {rival?.displayName ?? "o alvo"}</div>
+      <div className="scene-fighter scene-fighter--right" key={`${rival?.id}-${tick}`}>{rival ? <AgentPortrait actor={rival} frame={Math.max(0, actors.findIndex((actor) => actor.id === rival.id)) % 4} /> : <div className="scene-practice-target" aria-label="Alvo de treino">☠</div>}<strong>{rival ? next?.name : "TRAINING"}</strong></div>
+      <div className="scene-arena-feed"><span className="scene-feed-rune" aria-hidden="true">✦</span>{current?.displayName} <span>{rival ? "enfrenta" : "treina com"}</span> {rival?.displayName ?? "o alvo"}</div>
     </div>}
     <div className="scene-bottom"><div><span>NA CENA</span><b>{active?.name ?? "Aguardando"}</b></div><div><span>BILHETES</span><b>{actors.length}</b></div><div><span>ENTRADAS DA FILA</span><b>{formatBRL(contribution)}</b></div><div><span>PRÓXIMA EQUIPE</span><b>{next?.name ?? "Aguardando"}</b></div></div>
-    <div className="scene-roster"><span className="scene-roster-title">AGENTES DOS BILHETES · {teams.length} {teams.length === 1 ? "EQUIPE" : "EQUIPES"}</span>{teams.length > 4 && <span className="scene-rotation-note">Equipes e bilhetes alternam automaticamente para mostrar todos.</span>}<div>{actors.map((actor, index) => <div className="scene-roster-card" key={actor.id}><AgentPortrait actor={actor} frame={index % 4} small /><span><strong>{actor.displayName}</strong><small>{actor.team} · {formatBRL(actor.ticketAmount)} · {actor.donationXP} XP recente</small></span></div>)}</div></div>
+    <div className="scene-roster"><span className="scene-roster-title">AVENTUREIROS DA GUILD · {teams.length} {teams.length === 1 ? "PARTY" : "PARTIES"}</span>{teams.length > 4 && <span className="scene-rotation-note">Equipes e bilhetes alternam automaticamente para mostrar todos.</span>}<div>{actors.map((actor, index) => <div className="scene-roster-card" key={actor.id}><AgentPortrait actor={actor} frame={index % 4} small /><span><strong>{actor.displayName}</strong><small>{actor.team} · {formatBRL(actor.ticketAmount)} · {actor.donationXP} XP recente</small></span></div>)}</div></div>
     <p className="scene-disclaimer">Animação ilustrativa. As cenas não determinam o vencedor nem alteram a premiação. XP considera somente doações pagas recentes com nome único.</p>
   </section>
 }

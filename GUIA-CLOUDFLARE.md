@@ -6,7 +6,7 @@ Esta cópia usa um Worker, um banco D1 e credenciais próprios. A publicação a
 
 1. No painel Cloudflare, abra **Storage & Databases → D1 SQL database → Create database**.
 2. Crie `rinha-dukoth-historico` e copie o **Database ID**.
-3. Em `wrangler.jsonc`, substitua `00000000-0000-0000-0000-000000000000` pelo ID novo. Mantenha `binding: "DB"` e `name: "rinha-dukoth"`.
+3. O banco já está associado no `wrangler.jsonc` pelo ID `771ec66f-cc27-467d-8298-53f112039804`. Mantenha `binding: "DB"` e `name: "rinha-dukoth"`.
 4. Envie essa alteração apenas para a cópia do Dukoth. **Nunca use o ID do banco `rinha-historico` do Nuuh.**
 
 ## Conectar o GitHub
