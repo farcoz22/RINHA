@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import useSWR from "swr"
 import { AlertTriangle, Check, Expand, RefreshCw, RotateCcw, Trophy } from "lucide-react"
 import type { LiveData } from "@/lib/types"
@@ -10,6 +10,8 @@ import { Roulette, type RouletteSound, type WheelChoice } from "@/components/rou
 import { Ranking } from "@/components/ranking"
 import { NuuhSpotlight } from "@/components/nuuh-spotlight"
 import { getGameDescription, getPublicGameChoices } from "@/lib/roulette-games"
+import { AnimatedScenes } from "@/components/animated-scenes"
+import type { SceneMode } from "@/lib/scene-model"
 
 const fetcher = (url: string) => fetch(url).then((response) => response.json() as Promise<LiveData>)
 type Stage = "team" | "person" | "game"
@@ -25,6 +27,23 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
   })
   const live = data ?? initialData
   const [tab, setTab] = useState<Tab>("ao-vivo")
+  const [sceneMode, setSceneMode] = useState<SceneMode>("roulette")
+  const [autoPlayRoulette, setAutoPlayRoulette] = useState(true)
+  useEffect(() => {
+    const saved = window.localStorage.getItem("rinha-scene-mode")
+    if (saved === "neighborhood" || saved === "arena" || saved === "roulette") setSceneMode(saved)
+    if (window.localStorage.getItem("rinha-roulette-auto") === "off") setAutoPlayRoulette(false)
+  }, [])
+  function changeSceneMode(next: SceneMode) {
+    if (next === "roulette" && next !== sceneMode) reset()
+    setSceneMode(next)
+    window.localStorage.setItem("rinha-scene-mode", next)
+  }
+  function toggleRouletteAuto() {
+    const enabled = !autoPlayRoulette
+    setAutoPlayRoulette(enabled)
+    window.localStorage.setItem("rinha-roulette-auto", enabled ? "on" : "off")
+  }
   const [stage, setStage] = useState<Stage>("team")
   const [groupId, setGroupId] = useState<string | null>(null)
   const [teamId, setTeamId] = useState<string | null>(null)
@@ -90,6 +109,28 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
   const canPickGame = Boolean(selectedPerson && games.length)
   const currentResult = stage === "team" ? selectedTeam?.name : stage === "person" ? selectedPerson?.username : selectedGame?.label
 
+  // A roleta também funciona sem operador: sorteia equipe, pessoa e jogo,
+  // exibe o resultado por alguns segundos e reinicia sozinha.
+  useEffect(() => {
+    if (sceneMode !== "roulette" || tab !== "ao-vivo" || !autoPlayRoulette || spinning) return
+    let next: Stage | null = null
+    if (stage === "team" && selectedTeam) next = teamPeople.length > 1 ? "person" : "game"
+    else if (stage === "person" && selectedPerson) next = "game"
+    if (next === "game" && !canPickGame) next = null
+    if (!next && stage !== "game" && !selectedTeam && !selectedPerson) return
+    const timer = setTimeout(() => {
+      if (next) setStage(next)
+      else {
+        if (groups.length > 1) {
+          const index = groups.findIndex((group) => group.id === selectedGroup?.id)
+          setGroupId(groups[(index + 1) % groups.length].id)
+        }
+        reset()
+      }
+    }, next ? 3200 : 8500)
+    return () => clearTimeout(timer)
+  }, [sceneMode, tab, autoPlayRoulette, spinning, stage, selectedTeam?.id, selectedPerson?.id, selectedGame?.id, selectedGroup?.id, groups, teamPeople.length, canPickGame])
+
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6">
       <SiteHeader />
@@ -113,12 +154,19 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
         </div>
       </div>
 
-      {tab === "ao-vivo" ? (
-        <section ref={rouletteStageRef} className="roulette-stage grid gap-6 lg:grid-cols-2" id="fila">
+      {tab === "ao-vivo" ? (<>
+        <nav className="scene-mode-switch" aria-label="Escolher visualização da live">
+          <span>VISUAL DA LIVE</span>
+          <button type="button" aria-pressed={sceneMode === "neighborhood"} onClick={() => changeSceneMode("neighborhood")}>Vila simulada</button>
+          <button type="button" aria-pressed={sceneMode === "arena"} onClick={() => changeSceneMode("arena")}>Arena</button>
+          <button type="button" aria-pressed={sceneMode === "roulette"} onClick={() => changeSceneMode("roulette")}>Roleta</button>
+        </nav>
+        {sceneMode === "roulette" ? <section ref={rouletteStageRef} className="roulette-stage grid gap-6 lg:grid-cols-2" id="fila">
           <div className="rounded-3xl border border-border bg-card/60 p-6 backdrop-blur">
             <p className="text-center text-xs font-semibold tracking-[0.3em] text-accent uppercase">Roleta do Nuuhzão</p>
             <h2 className="mb-4 mt-1 text-center text-2xl font-bold">Quem vai jogar agora?</h2>
             <button type="button" onClick={() => { if (document.fullscreenElement) void document.exitFullscreen(); else void rouletteStageRef.current?.requestFullscreen() }} className="mb-3 flex items-center gap-2 rounded-lg border border-amber-400/30 px-3 py-1.5 text-xs font-semibold text-amber-200 transition hover:bg-amber-400/10"><Expand className="size-3.5" /> Tela cheia para a live</button>
+            <button type="button" onClick={toggleRouletteAuto} aria-pressed={autoPlayRoulette} className="mb-3 ml-2 rounded-lg border border-amber-400/30 px-3 py-1.5 text-xs font-semibold text-amber-200 transition hover:bg-amber-400/10">Giro automático: {autoPlayRoulette ? "ligado" : "desligado"}</button>
             {groups.length > 1 && <label className="mb-4 flex items-center justify-center gap-2 text-sm text-muted-foreground">
               Confronto
               <select value={selectedGroup?.id ?? ""} onChange={(event) => chooseGroup(event.target.value)} disabled={spinning} className="max-w-[65%] rounded-lg border border-input bg-background px-3 py-2 text-foreground">
@@ -130,7 +178,7 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
               <Step number={2} label="Pessoas" active={stage === "person"} disabled={spinning || teamPeople.length < 2} onClick={() => setStage("person")} />
               <Step number={3} label="Jogos" active={stage === "game"} disabled={spinning || !canPickGame} onClick={() => setStage("game")} />
             </div>
-            <Roulette key={`${selectedGroup?.id ?? "none"}-${stage}-${stage === "team" ? "" : teamId}-${stage === "game" ? participantId : ""}`} choices={choices} onSelected={handleSelected} onSpinningChange={setSpinning} buttonLabel={labels[stage]} sound={sound} onSoundChange={setSound} />
+            <Roulette key={`${selectedGroup?.id ?? "none"}-${stage}-${stage === "team" ? "" : teamId}-${stage === "game" ? participantId : ""}`} choices={choices} onSelected={handleSelected} onSpinningChange={setSpinning} buttonLabel={labels[stage]} sound={sound} onSoundChange={setSound} autoSpin={autoPlayRoulette} />
             <div className="mt-6 rounded-2xl border border-border bg-background/40 p-5 text-center" aria-live="polite">
               {currentResult ? <>
                 <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-amber-400/15 text-amber-400 ring-1 ring-amber-400/40"><Trophy className="size-6" /></div>
@@ -165,8 +213,8 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
             </>}
             {selectedTeam && <p className="mt-5 text-xs text-muted-foreground">Pessoas disponíveis na equipe: {teamPeople.length}. Pode voltar a uma etapa e girar novamente.</p>}
           </div>
-        </section>
-      ) : <Ranking participants={live.participants} battleGroups={live.battleGroups} donations={live.recentDonations} />}
+        </section> : <AnimatedScenes live={live} mode={sceneMode} />}
+      </>) : <Ranking participants={live.participants} battleGroups={live.battleGroups} donations={live.recentDonations} />}
       <footer className="mt-2 border-t border-border pt-5 text-xs text-muted-foreground">18+ | Jogue com responsabilidade! · Atualização automática a cada 10 minutos</footer>
     </div>
   )

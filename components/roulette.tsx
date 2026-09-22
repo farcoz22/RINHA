@@ -34,6 +34,7 @@ export function Roulette({
   buttonLabel,
   sound,
   onSoundChange,
+  autoSpin = false,
 }: {
   choices: WheelChoice[]
   onSelected: (choice: WheelChoice) => void
@@ -41,6 +42,7 @@ export function Roulette({
   buttonLabel: string
   sound: RouletteSound
   onSoundChange: (sound: RouletteSound) => void
+  autoSpin?: boolean
 }) {
   const [rotation, setRotation] = useState(0)
   const [ballRotation, setBallRotation] = useState(0)
@@ -56,6 +58,7 @@ export function Roulette({
   const ballRotationRef = useRef(0)
   const onSelectedRef = useRef(onSelected)
   const onSpinningRef = useRef(onSpinningChange)
+  const spinRef = useRef<() => void>(() => {})
   onSelectedRef.current = onSelected
   onSpinningRef.current = onSpinningChange
 
@@ -122,6 +125,13 @@ export function Roulette({
       onSelectedRef.current(snapshot[selectedIndex])
     }, effectiveDuration)
   }
+
+  spinRef.current = spin
+  useEffect(() => {
+    if (!autoSpin || !choices.length || spinning || landedId) return
+    const timer = setTimeout(() => spinRef.current(), 1700)
+    return () => clearTimeout(timer)
+  }, [autoSpin, choices.length, spinning, landedId])
 
   const visible = spinning || landedId ? spinChoices : choices
   return (
