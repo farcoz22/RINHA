@@ -52,8 +52,7 @@ function Avatar({ actor, activity = "idle", size = "normal" }: { actor: SceneAct
   </div>
 }
 
-function AgentPortrait({ actor, variant = 0, small = false }: { actor: SceneActor; variant?: number; small?: boolean }) {
-  const frame = (actor.hue + variant) % 4
+function AgentPortrait({ actor, frame = 0, small = false }: { actor: SceneActor; frame?: number; small?: boolean }) {
   return <div className={`scene-agent-portrait ${small ? "scene-agent-portrait--small" : ""}`} style={{ backgroundPosition: `${frame % 2 ? 100 : 0}% ${frame > 1 ? 100 : 0}%` }} role="img" aria-label={`Agente tático original representando o bilhete de ${actor.displayName}`}><span>{actor.displayName}</span></div>
 }
 
@@ -242,13 +241,13 @@ export function AnimatedScenes({ live, mode, onVillageResult }: { live: LiveData
     {actors.length === 0 ? <div className="scene-empty">Aguardando bilhetes. Os agentes entrarão na cena quando houver pessoas na fila.</div> : <div className="scene-world scene-world--arena">
       <div className="scene-arena-grid" /><div className="scene-arena-glow" />
       <div className="scene-arena-banner">CONFRONTO VISUAL <span>Rodada {String(tick + 1).padStart(2, "0")}</span></div>
-      <div className="scene-fighter scene-fighter--left" key={`${current?.id}-${tick}`}><AgentPortrait actor={current ?? actors[0]} /><strong>{active?.name}</strong></div>
+      <div className="scene-fighter scene-fighter--left" key={`${current?.id}-${tick}`}><AgentPortrait actor={current ?? actors[0]} frame={Math.max(0, actors.findIndex((actor) => actor.id === current?.id)) % 4} /><strong>{active?.name}</strong></div>
       <div className="scene-impact">VS<span>✦</span></div>
-      <div className="scene-fighter scene-fighter--right" key={`${rival?.id}-${tick}`}>{rival ? <AgentPortrait actor={rival} variant={1} /> : <div className="scene-practice-target" aria-label="Alvo de treino">◎</div>}<strong>{rival ? next?.name : "TREINO"}</strong></div>
+      <div className="scene-fighter scene-fighter--right" key={`${rival?.id}-${tick}`}>{rival ? <AgentPortrait actor={rival} frame={Math.max(0, actors.findIndex((actor) => actor.id === rival.id)) % 4} /> : <div className="scene-practice-target" aria-label="Alvo de treino">◎</div>}<strong>{rival ? next?.name : "TREINO"}</strong></div>
       <div className="scene-arena-feed"><span className="nuuh-meme-crop nuuh-meme-crop--susto" role="img" aria-label="Nuuh reagindo à disputa" />{current?.displayName} <span>{rival ? "enfrenta" : "treina com"}</span> {rival?.displayName ?? "o alvo"}</div>
     </div>}
     <div className="scene-bottom"><div><span>NA CENA</span><b>{active?.name ?? "Aguardando"}</b></div><div><span>BILHETES</span><b>{actors.length}</b></div><div><span>ENTRADAS DA FILA</span><b>{formatBRL(contribution)}</b></div><div><span>PRÓXIMA EQUIPE</span><b>{next?.name ?? "Aguardando"}</b></div></div>
-    <div className="scene-roster"><span className="scene-roster-title">AGENTES DOS BILHETES · {teams.length} {teams.length === 1 ? "EQUIPE" : "EQUIPES"}</span>{teams.length > 4 && <span className="scene-rotation-note">Equipes e bilhetes alternam automaticamente para mostrar todos.</span>}<div>{actors.map((actor) => <div className="scene-roster-card" key={actor.id}><AgentPortrait actor={actor} small /><span><strong>{actor.displayName}</strong><small>{actor.team} · {formatBRL(actor.ticketAmount)} · {actor.donationXP} XP recente</small></span></div>)}</div></div>
+    <div className="scene-roster"><span className="scene-roster-title">AGENTES DOS BILHETES · {teams.length} {teams.length === 1 ? "EQUIPE" : "EQUIPES"}</span>{teams.length > 4 && <span className="scene-rotation-note">Equipes e bilhetes alternam automaticamente para mostrar todos.</span>}<div>{actors.map((actor, index) => <div className="scene-roster-card" key={actor.id}><AgentPortrait actor={actor} frame={index % 4} small /><span><strong>{actor.displayName}</strong><small>{actor.team} · {formatBRL(actor.ticketAmount)} · {actor.donationXP} XP recente</small></span></div>)}</div></div>
     <p className="scene-disclaimer">Animação ilustrativa. As cenas não determinam o vencedor nem alteram a premiação. XP considera somente doações pagas recentes com nome único.</p>
   </section>
 }
