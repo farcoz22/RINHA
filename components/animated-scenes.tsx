@@ -57,7 +57,7 @@ function VillageDraw({ live, actors, teams, onResult }: { live: LiveData; actors
   const [teamId, setTeamId] = useState<string | null>(null)
   const [personId, setPersonId] = useState<string | null>(null)
   const [game, setGame] = useState<WheelChoice | null>(null)
-  const [automatic, setAutomatic] = useState(true)
+  const [automatic, setAutomatic] = useState(false)
   const [drawing, setDrawing] = useState(false)
   const [highlight, setHighlight] = useState<string | null>(null)
   const [round, setRound] = useState(0)
@@ -68,7 +68,6 @@ function VillageDraw({ live, actors, teams, onResult }: { live: LiveData; actors
   const sceneRef = useRef<HTMLElement | null>(null)
 
   useEffect(() => {
-    if (window.localStorage.getItem("rinha-village-auto") === "off") setAutomatic(false)
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current)
       if (intervalRef.current) clearInterval(intervalRef.current)
@@ -139,14 +138,14 @@ function VillageDraw({ live, actors, teams, onResult }: { live: LiveData; actors
     const winner = forcedId ? snapshot.find((item) => item.id === forcedId) : snapshot[nextRandom(snapshot.length)]
     if (!winner) return
     setDrawing(true)
-    intervalRef.current = setInterval(() => setHighlight(snapshot[nextRandom(snapshot.length)].id), 120)
+    intervalRef.current = setInterval(() => setHighlight(snapshot[nextRandom(snapshot.length)].id), 170)
     timerRef.current = setTimeout(() => {
       if (intervalRef.current) clearInterval(intervalRef.current)
       intervalRef.current = null
       setHighlight(winner.id)
       setDrawing(false)
       commit(winner)
-    }, window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 220 : 2200)
+    }, window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 220 : 3600)
   }
   function restart() {
     if (timerRef.current) clearTimeout(timerRef.current)
@@ -182,38 +181,33 @@ function VillageDraw({ live, actors, teams, onResult }: { live: LiveData; actors
     return () => clearTimeout(timer)
   }, [automatic, drawing, phase, teamId, personId, round, teams, games])
 
-  return <section ref={sceneRef} className="scene-shell scene-shell--village" aria-label="Vila interativa para sorteio dos bilhetes">
-    <div className="scene-topbar"><div><span className="scene-overline">VILA DO NUUH · SORTEIO EM MOVIMENTO</span><h2>Equipe → pessoa → jogo</h2></div><span className="scene-online"><i /> FILA AO VIVO</span></div>
-    <div className="scene-village-controls">
-      <span className="scene-step-indicator">{drawing ? `Sorteando ${phaseName}...` : phase === "finished" ? "Sorteio concluído" : `Etapa ${phase === "team" ? 1 : phase === "person" ? 2 : 3}/3 · Escolha ou sorteie ${phaseName}`}</span>
-      <div>
-        <button type="button" onClick={() => { const enabled = !automatic; setAutomatic(enabled); window.localStorage.setItem("rinha-village-auto", enabled ? "on" : "off") }} aria-pressed={automatic}>{automatic ? "Automático: ligado" : "Automático: desligado"}</button>
-        <button type="button" onClick={() => { if (document.fullscreenElement) void document.exitFullscreen(); else void sceneRef.current?.requestFullscreen() }}>Tela cheia</button>
-        <button type="button" onClick={restart} disabled={drawing}>Novo sorteio</button>
+  const focus = phase === "finished" ? (gameDescription || game?.label || person?.displayName) : drawing ? options.find((item) => item.id === highlight)?.label : phase === "team" ? "Aguardando equipe" : phase === "person" ? "Aguardando pessoa" : "Aguardando jogo"
+  return <section ref={sceneRef} className="scene-shell scene-shell--village scene-shell--casino" aria-label="Mesa de sorteio tático dos bilhetes">
+    <div className="scene-topbar"><div><span className="scene-overline">BATALHAS DO NUUHZÃO · MESA DE SORTEIO</span><h2>Confronto & sorteio</h2></div><span className="scene-online"><i /> AO VIVO</span></div>
+    <div className="scene-casino-stage">
+      <div className="scene-casino-head"><span>◈ {phase === "finished" ? "RESULTADO REVELADO" : drawing ? "SORTEIO EM CURSO" : "MESA ABERTA"}</span><span>RODADA {String(round + 1).padStart(2, "0")}</span></div>
+      <div className="scene-casino-center" aria-live="polite" aria-atomic="true">
+        <span className="scene-casino-kicker">{phase === "finished" ? "ESCOLHIDO" : drawing ? `SORTEANDO ${phaseName.toUpperCase()}` : `ETAPA ${phase === "team" ? 1 : phase === "person" ? 2 : 3} / 3 · ${phaseName.toUpperCase()}`}</span>
+        <div className={`scene-casino-reel ${drawing ? "scene-casino-reel--rolling" : ""} ${phase === "finished" ? "scene-casino-reel--won" : ""}`}><span className="scene-casino-pointer">▼</span><strong key={`${phase}-${focus}`}>{focus}</strong><span className="scene-casino-pointer">▲</span></div>
+        <div className="scene-casino-trail"><span>{team?.name ?? "EQUIPE ?"}</span><span>✦</span><span>{person?.displayName ?? "PESSOA ?"}</span><span>✦</span><span>{game?.label ?? (phase === "finished" ? "SEM JOGO PÚBLICO" : "JOGO ?")}</span></div>
       </div>
+      <div className="scene-casino-floor">{drawing ? "◆ ◆ ◆ ◆ ◆" : phase === "finished" ? "✦ BATALHA DEFINIDA ✦" : "PRONTO PARA O SORTEIO"}</div>
     </div>
-    {teams.length > 0 && <div className="scene-team-switcher" aria-label="Equipes da vila">
-      <span>Casas da vila</span>
-      {teams.map((item) => <button key={item.id} type="button" disabled={drawing} aria-pressed={teamId === item.id} onClick={() => chooseHouse(item.id)}>{item.name} <small>{item.actors.length}</small></button>)}
-    </div>}
-    {!teams.length ? <div className="scene-empty">Aguardando bilhetes. Quando entrarem na fila, as equipes vão ocupar as casas.</div> : <>
-      <div className="scene-world scene-world--village">
-        {visibleTeams.map((item, index) => <button key={item.id} type="button" className={`scene-home scene-home--${index + 1} ${item.id === teamId || highlight === item.id ? "scene-home--active" : ""}`} onClick={() => chooseHouse(item.id)} disabled={drawing} aria-label={`Escolher equipe ${item.name}, ${item.actors.length} bilhete(s)`}><span className="scene-home-sign">{item.name}</span></button>)}
-        {phase !== "team" && <div className="scene-village-actors" key={`${teamId}-${carousel}`}>
-          {visiblePeople.map((actor) => <button key={actor.id} className={`scene-actor-choice ${highlight === actor.id || personId === actor.id ? "scene-actor-choice--active" : ""}`} type="button" onClick={() => phase === "person" && draw(actor.id)} disabled={phase !== "person" || drawing} aria-label={`Escolher ${actor.displayName}`}><Avatar actor={actor} activity="walk" /></button>)}
-        </div>}
-        {phase === "team" && <div className="scene-village-actors scene-village-actors--ambient">{visibleTeams.flatMap((item) => item.actors.slice(0, 1)).map((actor) => <Avatar key={actor.id} actor={actor} activity="walk" />)}</div>}
-        <div className="scene-event" aria-live="polite">{phase === "finished" ? <><strong>{team?.name}</strong><span> · {person?.displayName}{game ? ` · ${game.label}` : " · sem jogo público"}</span></> : <><strong>{drawing ? "Sorteio em andamento" : "A vila está viva"}</strong><span> · clique em uma casa, personagem ou jogo</span></>}</div>
+    <div className="scene-village-controls"><span className="scene-step-indicator">{drawing ? `Sorteando ${phaseName}...` : phase === "finished" ? "Resultado pronto para a live" : `Escolha ou sorteie ${phaseName}`}</span><div>
+      <button type="button" onClick={() => setAutomatic((value) => !value)} aria-pressed={automatic}>{automatic ? "Automático: ligado" : "Automático: desligado"}</button>
+      <button type="button" onClick={() => { if (document.fullscreenElement) void document.exitFullscreen(); else void sceneRef.current?.requestFullscreen() }}>Tela cheia</button>
+      <button type="button" onClick={restart} disabled={drawing}>Novo sorteio</button>
+    </div></div>
+    {teams.length ? <>
+      <div className="scene-village-result" aria-label="Etapas do sorteio"><span>01 · {team?.name ?? "EQUIPE"}</span><span>02 · {person?.displayName ?? "PESSOA"}</span><span>03 · {gameDescription || game?.label || (phase === "finished" ? "SEM JOGO PÚBLICO" : "JOGO")}</span></div>
+      <div className="scene-village-choices"><div className="scene-choices-heading"><span>{phase === "team" ? "Escolha uma equipe" : phase === "person" ? `Bilhetes de ${team?.name}` : phase === "game" ? `Jogos públicos de ${person?.displayName}` : "Sorteio concluído"}</span><b>{phase === "team" ? `${teams.length} equipes` : phase === "person" ? `${people.length} bilhetes` : phase === "game" ? `${games.length} jogos` : "RESULTADO"}</b></div>
+        {phase === "finished" ? <div className="scene-finished"><strong>{person?.displayName}</strong><span>{team?.name} · {gameDescription || game?.label || "Sem jogo público disponível"}</span><button type="button" onClick={restart}>Nova rodada</button></div> : <div className="scene-choice-list">{options.map((choice) => <button type="button" key={choice.id} disabled={drawing} className={highlight === choice.id ? "scene-choice--lit" : ""} onClick={() => draw(choice.id)}>{choice.label}{phase === "team" ? ` · ${teams.find((item) => item.id === choice.id)?.actors.length} bilhete(s)` : phase === "game" ? ` · ${getGameDescription(participant, choice) ?? ""}` : ""}</button>)}</div>}
+        {phase !== "finished" && <button type="button" className="scene-draw-button" disabled={drawing || !options.length} onClick={() => draw()}>{drawing ? "SORTEANDO..." : `◆ SORTEAR ${phaseName.toUpperCase()}`}</button>}
       </div>
-      <div className="scene-village-result" aria-live="polite"><span>{team?.name ?? "1 · Equipe"}</span><span>{person?.displayName ?? "2 · Pessoa"}</span><span>{game?.label ?? (phase === "finished" ? "Sem jogo público" : "3 · Jogo")}</span></div>
-      <div className="scene-village-choices">
-        <div className="scene-choices-heading"><span>{phase === "team" ? "Escolha uma equipe" : phase === "person" ? `Pessoas de ${team?.name}` : phase === "game" ? `Jogos públicos de ${person?.displayName}` : "Resultado do sorteio"}</span><b>{phase === "team" ? `${teams.length} equipes` : phase === "person" ? `${people.length} bilhetes` : phase === "game" ? `${games.length} jogos` : "Concluído"}</b></div>
-        {phase === "finished" ? <div className="scene-finished"><strong>{person?.displayName}</strong><span>{team?.name} · {gameDescription || game?.label || "Sem jogo público disponível"}</span><button type="button" onClick={restart}>Sortear novamente</button></div> : <div className="scene-choice-list">{options.map((choice) => <button type="button" key={choice.id} disabled={drawing} className={highlight === choice.id ? "scene-choice--lit" : ""} onClick={() => draw(choice.id)}>{phase === "person" ? "◆ " : phase === "game" ? "▣ " : "⌂ "}{choice.label}{phase === "team" ? ` · ${teams.find((item) => item.id === choice.id)?.actors.length} bilhete(s)` : phase === "game" ? ` · ${getGameDescription(participant, choice) ?? ""}` : ""}</button>)}</div>}
-        {phase !== "finished" && <button type="button" className="scene-draw-button" disabled={drawing || !options.length} onClick={() => draw()}>{drawing ? "Sorteando..." : `Sortear ${phaseName}`}</button>}
-      </div>
-      <div className="scene-bottom"><div><span>NA CENA</span><b>{team?.name ?? visibleTeams[0]?.name}</b></div><div><span>BILHETES</span><b>{actors.length}</b></div><div><span>ENTRADAS DA FILA</span><b>{formatBRL(contribution)}</b></div><div><span>RODADA</span><b>{round + 1}</b></div></div>
-    </>}
-    <p className="scene-disclaimer">As casas, personagens e jogos fazem o sorteio visual. Campos sensíveis não participam. O sorteio não altera vencedores ou pagamentos.</p>
+      <div className="scene-team-switcher" aria-label="Escolher equipe diretamente"><span>EQUIPES</span>{teams.map((item) => <button key={item.id} type="button" disabled={drawing} aria-pressed={teamId === item.id} onClick={() => chooseHouse(item.id)}>{item.name} <small>{item.actors.length}</small></button>)}</div>
+      <div className="scene-bottom"><div><span>EM DESTAQUE</span><b>{team?.name ?? visibleTeams[0]?.name}</b></div><div><span>BILHETES</span><b>{actors.length}</b></div><div><span>ENTRADAS DA FILA</span><b>{formatBRL(contribution)}</b></div><div><span>RODADA</span><b>{round + 1}</b></div></div>
+    </> : <div className="scene-empty">Aguardando bilhetes para abrir a mesa de sorteio.</div>}
+    <p className="scene-disclaimer">Confronto visual com agentes originais. Campos sensíveis ficam ocultos. O sorteio não altera vencedores ou pagamentos.</p>
   </section>
 }
 
@@ -239,7 +233,7 @@ export function AnimatedScenes({ live, mode, onVillageResult }: { live: LiveData
   if (mode === "neighborhood") return <VillageDraw live={live} actors={actors} teams={teams} onResult={onVillageResult} />
 
   return <section className="scene-shell" aria-label="Arena dos bilhetes, animação automática dos bilhetes">
-    <div className="scene-topbar"><div><span className="scene-overline">SIMULAÇÃO AO VIVO · SEM CLIQUES</span><h2>Arena dos bilhetes</h2></div><span className="scene-online"><i /> ATUALIZAÇÃO AUTOMÁTICA</span></div>
+    <div className="scene-topbar"><div><span className="scene-overline">AGENTES ORIGINAIS · CONFRONTO VISUAL</span><h2>Confronto tático</h2></div><span className="scene-online"><i /> CENA AUTOMÁTICA</span></div>
     {actors.length === 0 ? <div className="scene-empty">Aguardando bilhetes. Os personagens entrarão na cena quando houver pessoas na fila.</div> : <div className="scene-world scene-world--arena">
       <div className="scene-arena-grid" /><div className="scene-arena-glow" />
       <div className="scene-arena-banner">CONFRONTO VISUAL <span>Rodada {String(tick + 1).padStart(2, "0")}</span></div>

@@ -165,8 +165,8 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
       {tab === "ao-vivo" ? (<>
         <nav className="scene-mode-switch" aria-label="Escolher visualização da live">
           <span>VISUAL DA LIVE</span>
-          <button type="button" aria-pressed={sceneMode === "neighborhood"} onClick={() => changeSceneMode("neighborhood")}>Vila simulada</button>
-          <button type="button" aria-pressed={sceneMode === "arena"} onClick={() => changeSceneMode("arena")}>Arena</button>
+          <button type="button" aria-pressed={sceneMode === "neighborhood"} onClick={() => changeSceneMode("neighborhood")}>Cassino tático</button>
+          <button type="button" aria-pressed={sceneMode === "arena"} onClick={() => changeSceneMode("arena")}>Confronto</button>
           <button type="button" aria-pressed={sceneMode === "roulette"} onClick={() => changeSceneMode("roulette")}>Roleta</button>
         </nav>
         {sceneMode === "roulette" ? <section ref={rouletteStageRef} className="roulette-stage grid gap-6 lg:grid-cols-2" id="fila">

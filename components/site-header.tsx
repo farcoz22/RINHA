@@ -5,7 +5,7 @@ export function SiteHeader() {
     <header className="rounded-3xl border border-border bg-card/70 px-4 py-3 backdrop-blur sm:px-6">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <img src="/nuuh/avatar.png" alt="NuuhFPS" width={44} height={44} className="size-11 rounded-2xl object-cover ring-1 ring-[#9147ff]/50" />
+          <img src="/nuuh/susto-obvio.jpg" alt="NuuhFPS em um momento engraçado da live" width={52} height={52} className="size-13 rounded-2xl object-cover object-[88%_23%] ring-2 ring-rose-400/70" />
           <div className="leading-tight">
             <p className="text-sm font-bold tracking-tight sm:text-base">Batalhas do Nuuhzão</p>
             <p className="text-xs text-muted-foreground">Painel ao vivo da live</p>

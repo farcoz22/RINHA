@@ -249,3 +249,29 @@
 .scene-shell--village:fullscreen{overflow-y:auto;width:100vw;height:100vh;border-radius:0;background:#0d1c2b}
 .scene-shell--village:fullscreen .scene-world{height:min(63vh,640px)}
 @media(max-width:680px){.scene-village-controls,.scene-team-switcher{padding:.65rem}.scene-village-result,.scene-village-choices{padding:.65rem}.scene-village-result span{font-size:.65rem}.scene-choice-list{max-height:95px}.scene-event{font-size:.67rem}}
+
+/* Mesa de sorteio tática: cenário original, leitura forte para transmissão. */
+.scene-shell--casino{border-color:#6b585a;background:#101521;box-shadow:0 12px 55px #0006}
+.scene-shell--casino .scene-topbar{background:#171c28;border-bottom:1px solid #e667655c}
+.scene-shell--casino .scene-overline{color:#ff9892}
+.scene-casino-stage{height:clamp(390px,43vw,570px);position:relative;overflow:hidden;background:#101c2b url('/nuuh/confronto-original.webp') center center/cover no-repeat;display:flex;align-items:center;justify-content:center}
+.scene-casino-stage:before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#080e1a66 0%,#07132015 25%,#0913227a 50%,#07132015 75%,#080e1a66 100%);pointer-events:none}
+.scene-casino-head{position:absolute;z-index:2;top:4%;left:3%;right:3%;display:flex;justify-content:space-between;gap:1rem;color:#e2faff;font-size:clamp(.58rem,1.1vw,.83rem);font-weight:950;letter-spacing:.19em;text-shadow:0 2px 7px #050b1b}
+.scene-casino-head span:first-child{color:#8bfff2}
+.scene-casino-center{z-index:2;width:min(58%,710px);text-align:center;padding:1.5rem 1rem;background:radial-gradient(ellipse,#091524df 15%,#091524ad 56%,#09152400 74%);display:grid;justify-items:center;gap:.75rem}
+.scene-casino-kicker{font-size:clamp(.65rem,1.3vw,.95rem);color:#a5f6f4;font-weight:950;letter-spacing:.25em;text-shadow:0 1px 5px #000}
+.scene-casino-reel{position:relative;width:100%;min-height:120px;display:grid;align-content:center;justify-items:center;gap:.25rem;border-block:2px solid #70eced;border-radius:3px;background:linear-gradient(90deg,transparent,#081b2add 15%,#122a3bf5 50%,#081b2add 85%,transparent);box-shadow:0 0 30px #61e8e734,inset 0 0 28px #72eef11b}
+.scene-casino-reel:before,.scene-casino-reel:after{content:"◆";position:absolute;top:50%;transform:translateY(-50%);color:#ff7f75;font-size:1.25rem;text-shadow:0 0 10px #ff7f75}.scene-casino-reel:before{left:0}.scene-casino-reel:after{right:0}
+.scene-casino-reel strong{width:100%;max-height:4.8em;overflow:hidden;padding:0 .75rem;color:#f9ffff;text-shadow:0 2px 14px #0fd9ce;font-size:clamp(1.35rem,4vw,3.5rem);font-weight:1000;line-height:1.12;overflow-wrap:anywhere;animation:scene-enter .2s both}
+.scene-casino-reel--rolling strong{color:#a5ffff;filter:blur(.7px)}
+.scene-casino-reel--won{border-color:#ffe2a1;box-shadow:0 0 35px #f7c675aa,inset 0 0 24px #d5a65555;animation:scene-jackpot .9s ease-out}
+.scene-casino-pointer{font-size:.65rem;color:#ff8375;line-height:1}
+.scene-casino-trail{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:.4rem;color:#f1eff1;font-size:clamp(.58rem,.95vw,.78rem);font-weight:900;text-shadow:0 2px 7px #000}
+.scene-casino-trail span:nth-child(even){color:#ff8c7b}
+.scene-casino-floor{position:absolute;bottom:4%;left:0;right:0;text-align:center;letter-spacing:.23em;font-size:clamp(.58rem,1.1vw,.85rem);font-weight:950;color:#e2fdfb;text-shadow:0 2px 8px #000}
+.scene-shell--casino .scene-village-controls{background:#1b2432}.scene-shell--casino .scene-draw-button{min-width:230px;background:linear-gradient(100deg,#ff9478,#ea494b);color:#220e18;box-shadow:0 6px 25px #f8494970;text-align:center;border:1px solid #ffb0a0}
+.scene-shell--casino .scene-choice-list button:hover:not(:disabled),.scene-shell--casino .scene-choice-list .scene-choice--lit{background:#ba4a50;border-color:#ffb9a4;box-shadow:0 0 17px #ff686a80}
+.scene-shell--casino .scene-village-result span{white-space:normal;overflow-wrap:anywhere;min-height:3em}.scene-shell--casino .scene-village-result span:nth-child(3){color:#a2f7e8}
+.scene-world--arena{background:#111b29 url('/nuuh/confronto-original.webp') center/cover no-repeat}.scene-world--arena .scene-arena-grid,.scene-world--arena .scene-arena-glow{opacity:.2}
+@keyframes scene-jackpot{0%{transform:scale(.85);filter:brightness(2)}65%{transform:scale(1.05)}100%{transform:scale(1);filter:brightness(1)}}
+@media(max-width:680px){.scene-casino-stage{height:440px;background-position:center}.scene-casino-center{width:76%;padding:.8rem .2rem}.scene-casino-reel{min-height:100px}.scene-casino-reel strong{font-size:clamp(1.2rem,6vw,2rem)}.scene-casino-trail{font-size:.56rem}.scene-casino-head{top:3%}}
