@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useId, useRef, useState } from "react"
 import { CircleHelp, Volume2 } from "lucide-react"
 
 export interface WheelChoice {
@@ -44,6 +44,7 @@ export function Roulette({
   onSoundChange: (sound: RouletteSound) => void
   autoSpin?: boolean
 }) {
+  const wheelId = useId().replace(/:/g, "")
   const [rotation, setRotation] = useState(0)
   const [ballRotation, setBallRotation] = useState(0)
   const [duration, setDuration] = useState(DURATION)
@@ -134,21 +135,29 @@ export function Roulette({
   }, [autoSpin, choices.length, spinning, landedId])
 
   const visible = spinning || landedId ? spinChoices : choices
+  const maxLabelLength = visible.length > 12 ? 5 : visible.length > 8 ? 7 : visible.length > 4 ? 9 : 13
   return (
     <div className="flex flex-col items-center">
       <div className="relative w-full max-w-[360px] p-4" aria-label={`Roleta com ${visible.length} opções`}>
         <div className="casino-wheel-frame relative aspect-square overflow-hidden rounded-full p-3">
           <div className="absolute inset-2 rounded-full border-2 border-amber-300/50" />
           <svg viewBox={`0 0 ${SIZE} ${SIZE}`} className="relative size-full rounded-full" style={{ transform: `rotate(${rotation}deg)`, transformOrigin: "center", transition: spinning ? `transform ${duration}ms cubic-bezier(0.12, 0.65, 0.18, 1)` : "none" }}>
+            <defs>
+              {visible.length > 1 && visible.map((choice, i) => (
+                <clipPath id={`${wheelId}-slice-${i}`} key={`clip-${choice.id}`}>
+                  <path d={slicePath(i, visible.length)} />
+                </clipPath>
+              ))}
+            </defs>
             {!visible.length ? <circle cx={R} cy={R} r={R - 2} fill={CASINO_BLACK} /> : visible.map((choice, i) => {
               const mid = (i + 0.5) * 360 / visible.length
               const pos = polar(R * 0.67, mid)
               const selected = landedId === choice.id
-              return <g key={choice.id}>
+              return <g key={choice.id} clipPath={visible.length > 1 ? `url(#${wheelId}-slice-${i})` : undefined}>
                 {visible.length === 1 ? <circle cx={R} cy={R} r={R - 4} fill={CASINO_RED} stroke={selected ? "#facc15" : "transparent"} strokeWidth={selected ? 8 : 0} /> :
                   <path d={slicePath(i, visible.length)} fill={i % 2 ? CASINO_BLACK : CASINO_RED} stroke={selected ? "#facc15" : "#d2a75c"} strokeWidth={selected ? 5 : 1.5} style={selected ? { filter: "drop-shadow(0 0 12px #facc15)" } : undefined} />}
                 <text x={pos.x} y={pos.y} fill="#fff8eb" fontSize={visible.length > 12 ? 9 : visible.length === 1 ? 18 : 12} fontWeight={800} textAnchor="middle" dominantBaseline="middle" transform={`rotate(${mid} ${pos.x} ${pos.y})`}>
-                  {choice.label.length > 13 ? choice.label.slice(0, 12) + "…" : choice.label}
+                  {choice.label.length > maxLabelLength ? choice.label.slice(0, Math.max(1, maxLabelLength - 1)) + "…" : choice.label}
                 </text>
               </g>
             })}
@@ -157,8 +166,15 @@ export function Roulette({
           <div className="pointer-events-none absolute inset-3" style={{ transform: `rotate(${ballRotation}deg)`, transition: spinning ? `transform ${duration}ms cubic-bezier(0.17, 0.72, 0.2, 1)` : "none" }}>
             <div className="casino-ball absolute left-1/2 top-[2%] size-4 -translate-x-1/2 rounded-full" />
           </div>
-          <div className="pointer-events-none absolute left-1/2 top-1/2 flex size-[22%] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-[5px] border-amber-400 bg-gradient-to-br from-amber-500 via-amber-950 to-amber-500 text-center text-[10px] font-black tracking-wide text-amber-50 shadow-[0_3px_16px_#000]">
-            {spinning ? "GIRANDO" : landedId ? "SORTEADO" : "NUUH"}
+          <div
+            className="pointer-events-none absolute left-1/2 top-1/2 size-[24%] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-full border-[5px] border-amber-400 bg-cover bg-center shadow-[0_3px_18px_#000]"
+            style={{ backgroundImage: "url('/nuuh/avatar.png')" }}
+            role="img"
+            aria-label="Nuuh no centro da roleta"
+          >
+            <span className="absolute inset-x-0 bottom-0 bg-black/75 py-0.5 text-center text-[7px] font-black tracking-wide text-amber-100">
+              {spinning ? "GIRANDO" : landedId ? "SORTEADO" : "NUUH"}
+            </span>
           </div>
         </div>
         <div className="pointer-events-none absolute left-1/2 top-0 z-10 -translate-x-1/2 text-amber-300 drop-shadow-[0_2px_5px_#000]" aria-hidden="true">

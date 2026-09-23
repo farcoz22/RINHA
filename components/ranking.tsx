@@ -1,11 +1,10 @@
 "use client"
 
-import { useState } from "react"
 import { Crosshair, Swords, Users } from "lucide-react"
 import type { BattleGroup, Participant, RecentDonation } from "@/lib/types"
 import { formatBRL, formatTime } from "@/lib/format"
 import { PoolCalculator } from "@/components/pool-calculator"
-import { BattleHistory } from "@/components/battle-history"
+import { PaymentExport } from "@/components/battle-history"
 
 interface RankingProps {
   participants: Participant[]
@@ -21,7 +20,6 @@ const STATUS_LABEL: Record<RecentDonation["status"], string> = {
 }
 
 export function Ranking({ participants, battleGroups, donations }: RankingProps) {
-  const [historyRefresh, setHistoryRefresh] = useState(0)
   const grouped = battleGroups.filter((group) => group.id !== "__solo__")
   const solo = battleGroups.find((group) => group.id === "__solo__")
 
@@ -30,7 +28,6 @@ export function Ranking({ participants, battleGroups, donations }: RankingProps)
       <PoolCalculator
         groups={battleGroups}
         participants={participants}
-        onSaved={() => setHistoryRefresh((value) => value + 1)}
       />
 
       <section className="rounded-3xl border border-border bg-card/60 p-4 backdrop-blur sm:p-5 lg:col-span-2">
@@ -182,7 +179,7 @@ export function Ranking({ participants, battleGroups, donations }: RankingProps)
         </div>
       </section>
 
-      <BattleHistory refreshKey={historyRefresh} />
+      <PaymentExport />
 
       <section className="rounded-3xl border border-border bg-card/60 p-4 backdrop-blur sm:p-5">
         <p className="flex items-center gap-2 text-xs font-semibold tracking-[0.3em] text-accent uppercase">

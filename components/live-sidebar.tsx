@@ -6,7 +6,6 @@ import type { BattleGroup, Participant } from "@/lib/types"
 import type { PoolDraft } from "@/lib/pool-preview"
 import { getPoolPreview } from "@/lib/pool-preview"
 import { formatBRL } from "@/lib/format"
-import { SponsorBanner } from "@/components/sponsor-banner"
 import { PasswordDialog } from "@/components/password-dialog"
 
 export function LiveSidebar({ groups, participants, groupId, draft, onGroupChange, onDraftChange }: {
@@ -63,7 +62,6 @@ export function LiveSidebar({ groups, participants, groupId, draft, onGroupChang
     }
   }
   return <aside className="live-sidebar" aria-label="Liderança e pote ao vivo">
-    <SponsorBanner />
     <div className="live-scoreboard">
       <div className="live-scoreboard__header"><span>◈ PLACAR DA RODADA</span><span>AO VIVO</span></div>
       <label className="live-scoreboard__group">Fila

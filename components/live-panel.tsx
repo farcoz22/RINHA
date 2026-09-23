@@ -14,6 +14,7 @@ import { AnimatedScenes, type VillageResult } from "@/components/animated-scenes
 import type { SceneMode } from "@/lib/scene-model"
 import type { PoolDraft } from "@/lib/pool-preview"
 import { LiveSidebar } from "@/components/live-sidebar"
+import { PasswordDialog } from "@/components/password-dialog"
 
 const fetcher = (url: string) => fetch(url).then((response) => response.json() as Promise<LiveData>)
 type Stage = "team" | "person" | "game"
@@ -66,6 +67,9 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
   const [game, setGame] = useState<WheelChoice | null>(null)
   const [sound, setSound] = useState<RouletteSound>("classic")
   const [spinning, setSpinning] = useState(false)
+  const [resetDialogOpen, setResetDialogOpen] = useState(false)
+  const [resetBusy, setResetBusy] = useState(false)
+  const [resetError, setResetError] = useState<string | null>(null)
   const rouletteStageRef = useRef<HTMLElement | null>(null)
 
   const groups = useMemo(() =>
@@ -102,6 +106,25 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
     setTeamId(null)
     setParticipantId(null)
     setGame(null)
+  }
+
+  async function confirmReset(password: string) {
+    setResetBusy(true)
+    setResetError(null)
+    try {
+      const response = await fetch("/api/admin/verify", {
+        method: "POST",
+        headers: { "x-export-password": password },
+      })
+      const result = (await response.json()) as { ok?: boolean; error?: string }
+      if (!response.ok || !result.ok) throw new Error(result.error ?? "Senha incorreta")
+      reset()
+      setResetDialogOpen(false)
+    } catch (error) {
+      setResetError(error instanceof Error ? error.message : "Não foi possível reiniciar")
+    } finally {
+      setResetBusy(false)
+    }
   }
 
   function handleSelected(choice: WheelChoice) {
@@ -173,7 +196,7 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
           <button type="button" onClick={() => void mutate()} disabled={isValidating} className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-muted-foreground ring-1 ring-border transition hover:text-foreground disabled:opacity-50">
             <RefreshCw className={`size-3.5 ${isValidating ? "animate-spin" : ""}`} /> {isValidating ? "Atualizando..." : "Atualizar dados"}
           </button>
-          {(teamId || participantId || game) && <button type="button" onClick={reset} disabled={spinning} className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-muted-foreground ring-1 ring-border transition hover:text-foreground disabled:opacity-50"><RotateCcw className="size-3.5" /> Reiniciar sorteio</button>}
+          {(teamId || participantId || game) && <button type="button" onClick={() => { setResetError(null); setResetDialogOpen(true) }} disabled={spinning} className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-muted-foreground ring-1 ring-border transition hover:text-foreground disabled:opacity-50"><RotateCcw className="size-3.5" /> Reiniciar sorteio</button>}
         </div>
       </div>
 
@@ -241,6 +264,15 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
         </section> : <div className="live-play-grid" id="fila"><AnimatedScenes live={live} mode={sceneMode} onVillageResult={handleVillageResult} /><LiveSidebar groups={groups} participants={live.participants} groupId={selectedGroup?.id ?? null} draft={poolDraft} onGroupChange={chooseGroup} onDraftChange={updateDraft} /></div>}
       </>) : <Ranking participants={live.participants} battleGroups={live.battleGroups} donations={live.recentDonations} />}
       <footer className="mt-2 border-t border-border pt-5 text-xs text-muted-foreground">18+ | Jogue com responsabilidade! · Atualização automática a cada 10 minutos</footer>
+      <PasswordDialog
+        open={resetDialogOpen}
+        title="Tem certeza que deseja reiniciar?"
+        description="A equipe, a pessoa e o jogo já sorteados serão apagados da tela. Digite a senha administrativa para confirmar."
+        error={resetError}
+        busy={resetBusy}
+        onConfirm={confirmReset}
+        onClose={() => { if (!resetBusy) setResetDialogOpen(false) }}
+      />
     </div>
   )
 }
