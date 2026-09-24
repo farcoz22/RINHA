@@ -1,25 +1,17 @@
 "use client"
 
-import { Crosshair, Swords, Users } from "lucide-react"
-import type { BattleGroup, Participant, RecentDonation } from "@/lib/types"
-import { formatBRL, formatTime } from "@/lib/format"
+import { Crosshair, Swords } from "lucide-react"
+import type { BattleGroup, Participant } from "@/lib/types"
+import { formatBRL } from "@/lib/format"
 import { PoolCalculator } from "@/components/pool-calculator"
 import { PaymentExport } from "@/components/battle-history"
 
 interface RankingProps {
   participants: Participant[]
   battleGroups: BattleGroup[]
-  donations: RecentDonation[]
 }
 
-const STATUS_LABEL: Record<RecentDonation["status"], string> = {
-  PAID: "Pago",
-  CREATED: "Criado",
-  CANCELED: "Cancelado",
-  EXPIRED: "Expirado",
-}
-
-export function Ranking({ participants, battleGroups, donations }: RankingProps) {
+export function Ranking({ participants, battleGroups }: RankingProps) {
   const grouped = battleGroups.filter((group) => group.id !== "__solo__")
   const solo = battleGroups.find((group) => group.id === "__solo__")
 
@@ -180,38 +172,6 @@ export function Ranking({ participants, battleGroups, donations }: RankingProps)
       </section>
 
       <PaymentExport />
-
-      <section className="rounded-3xl border border-border bg-card/60 p-4 backdrop-blur sm:p-5">
-        <p className="flex items-center gap-2 text-xs font-semibold tracking-[0.3em] text-accent uppercase">
-          <Users className="size-3.5" /> Doações
-        </p>
-        <h2 className="mt-1 text-xl font-bold">Últimas doações</h2>
-        <ul className="mt-3 grid gap-2">
-          {donations.length === 0 && (
-            <li className="text-xs text-muted-foreground">
-              Sem doações recentes.
-            </li>
-          )}
-          {donations.map((donation) => (
-            <li
-              key={donation.id}
-              className="flex min-w-0 items-center justify-between gap-2 rounded-lg bg-background/50 px-3 py-2 text-xs"
-            >
-              <span className="min-w-0 truncate font-semibold">
-                {donation.username}
-                {donation.message ? ` · ${donation.message}` : ""}
-              </span>
-              <span className="shrink-0 text-muted-foreground">
-                {STATUS_LABEL[donation.status]} ·{" "}
-                {formatTime(donation.createdAt)}
-              </span>
-              <strong className="shrink-0 text-accent">
-                {formatBRL(donation.amount)}
-              </strong>
-            </li>
-          ))}
-        </ul>
-      </section>
     </div>
   )
 }

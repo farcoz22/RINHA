@@ -168,7 +168,7 @@ export function Roulette({
           </div>
           <div
             className="pointer-events-none absolute left-1/2 top-1/2 size-[24%] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-full border-[5px] border-amber-400 bg-cover bg-center shadow-[0_3px_18px_#000]"
-            style={{ backgroundImage: "url('/nuuh/avatar.png')" }}
+            style={{ backgroundImage: "url('/nuuh/roulette-meme.webp')" }}
             role="img"
             aria-label="Nuuh no centro da roleta"
           >

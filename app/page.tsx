@@ -1,10 +1,14 @@
 import { LivePanel } from "@/components/live-panel"
 import { getPublicLiveData } from "@/lib/live"
 import type { LiveData } from "@/lib/types"
+import { AccessGate } from "@/components/access-gate"
+import { hasSiteAccess } from "@/lib/site-access"
 
 export const dynamic = "force-dynamic"
 
 export default async function Page() {
+  if (!await hasSiteAccess()) return <AccessGate />
+
   let initialData: LiveData
   try {
     initialData = await getPublicLiveData()

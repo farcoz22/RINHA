@@ -262,7 +262,7 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
             {selectedTeam && <p className="mt-5 text-xs text-muted-foreground">Pessoas disponíveis na equipe: {teamPeople.length}. Pode voltar a uma etapa e girar novamente.</p>}
           </div></div>
         </section> : <div className="live-play-grid" id="fila"><AnimatedScenes live={live} mode={sceneMode} onVillageResult={handleVillageResult} /><LiveSidebar groups={groups} participants={live.participants} groupId={selectedGroup?.id ?? null} draft={poolDraft} onGroupChange={chooseGroup} onDraftChange={updateDraft} /></div>}
-      </>) : <Ranking participants={live.participants} battleGroups={live.battleGroups} donations={live.recentDonations} />}
+      </>) : <Ranking participants={live.participants} battleGroups={live.battleGroups} />}
       <footer className="mt-2 border-t border-border pt-5 text-xs text-muted-foreground">18+ | Jogue com responsabilidade! · Atualização automática a cada 10 minutos</footer>
       <PasswordDialog
         open={resetDialogOpen}
