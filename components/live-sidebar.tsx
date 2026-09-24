@@ -25,6 +25,13 @@ export function LiveSidebar({ groups, participants, groupId, currentTeamId, draf
   const [error, setError] = useState<string | null>(null)
   const group = groups.find((item) => item.id === groupId) ?? groups[0]
   const pool = group ? getPoolPreview(group, participants, draft) : null
+  const rankedResults = pool
+    ? [...pool.confirmedResults].sort(
+        (a, b) =>
+          b.amount - a.amount ||
+          a.event.name.localeCompare(b.event.name),
+      )
+    : []
 
   function suggestWinner(next: PoolDraft) {
     if (!group) return next
@@ -129,9 +136,13 @@ export function LiveSidebar({ groups, participants, groupId, currentTeamId, draf
           <span><b>{pool.completedCount}</b> concluída(s)</span>
           <span><b>{pool.pendingCount}</b> pendente(s)</span>
         </div>
-        <ol className="live-scoreboard__ranks" aria-label={`Resultados confirmados em ${group.name}`}>
-          {pool.confirmedResults.map((result, index) => <li key={result.event.id} className={index === 0 ? "live-scoreboard__rank--leader" : ""}><b>{index + 1}º</b><span title={result.event.name}>{result.event.name}</span><strong>{formatBRL(result.amount)}</strong></li>)}
-          {!pool.confirmedResults.length && <li><span>Os resultados confirmados aparecerão aqui.</span></li>}
+        <div className="mt-3 flex items-center justify-between gap-2 text-[9px] font-black tracking-[0.12em] text-slate-400 uppercase">
+          <span>Ranking da rodada</span>
+          <span>↓ maior para menor</span>
+        </div>
+        <ol className="live-scoreboard__ranks" aria-label={`Ranking do maior para o menor resultado confirmado em ${group.name}`}>
+          {rankedResults.map((result, index) => <li key={result.event.id} className={index === 0 ? "live-scoreboard__rank--leader" : ""}><b>{index + 1}º</b><span title={result.event.name}>{result.event.name}</span><strong>{formatBRL(result.amount)}</strong></li>)}
+          {!rankedResults.length && <li><span>Os resultados confirmados aparecerão aqui.</span></li>}
         </ol>
         <div className="live-scoreboard__money">
           <div><span>ENTRADAS</span><strong>{formatBRL(pool.entries)}</strong></div>

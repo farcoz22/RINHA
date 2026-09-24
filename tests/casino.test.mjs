@@ -111,6 +111,7 @@ test("placar ordena resultados confirmados e detecta empate", () => {
   const pool = getPoolPreview(group, live.participants, draft)
   assert.equal(pool.resultLeader?.event.id, second.id)
   assert.equal(pool.resultLeader?.amount, 900)
+  assert.deepEqual(pool.confirmedResults.map((result) => result.amount), [900, 354])
   assert.equal(pool.isTie, false)
   const tied = { [group.id]: { ...draft[group.id], casinoReturns: { [first.id]: "900,00", [second.id]: "900,00" } } }
   assert.equal(getPoolPreview(group, live.participants, tied).isTie, true)
