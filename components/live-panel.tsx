@@ -12,7 +12,7 @@ import { NuuhSpotlight } from "@/components/nuuh-spotlight"
 import { getGameDescription, getPublicGameChoices } from "@/lib/roulette-games"
 import { AnimatedScenes, type VillageResult } from "@/components/animated-scenes"
 import type { SceneMode } from "@/lib/scene-model"
-import type { PoolDraft } from "@/lib/pool-preview"
+import { isReturnConfirmed, type PoolDraft } from "@/lib/pool-preview"
 import { LiveSidebar } from "@/components/live-sidebar"
 import { PasswordDialog } from "@/components/password-dialog"
 
@@ -31,12 +31,12 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
   const live = data ?? initialData
   const [tab, setTab] = useState<Tab>("ao-vivo")
   const [sceneMode, setSceneMode] = useState<SceneMode>("roulette")
-  const [autoPlayRoulette, setAutoPlayRoulette] = useState(true)
+  const [autoPlayRoulette, setAutoPlayRoulette] = useState(false)
   const [poolDraft, setPoolDraft] = useState<PoolDraft>({})
   useEffect(() => {
     const saved = window.localStorage.getItem("rinha-scene-mode")
     if (saved === "neighborhood" || saved === "arena" || saved === "roulette" || saved === "squad") setSceneMode(saved)
-    if (window.localStorage.getItem("rinha-roulette-auto") === "off") setAutoPlayRoulette(false)
+    if (window.localStorage.getItem("rinha-roulette-auto-v2") === "on") setAutoPlayRoulette(true)
     try {
       const saved = window.localStorage.getItem("rhyno-pool-calculator")
       if (saved) setPoolDraft(JSON.parse(saved) as PoolDraft)
@@ -58,7 +58,7 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
   function toggleRouletteAuto() {
     const enabled = !autoPlayRoulette
     setAutoPlayRoulette(enabled)
-    window.localStorage.setItem("rinha-roulette-auto", enabled ? "on" : "off")
+    window.localStorage.setItem("rinha-roulette-auto-v2", enabled ? "on" : "off")
   }
   const [stage, setStage] = useState<Stage>("team")
   const [groupId, setGroupId] = useState<string | null>(null)
@@ -80,6 +80,8 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
   [live.battleGroups, live.participants])
 
   const selectedGroup = groups.find((group) => group.id === groupId) ?? groups[0] ?? null
+  const pendingTeams = selectedGroup?.events.filter((event) => !isReturnConfirmed(poolDraft, selectedGroup.id, event.id)) ?? []
+  const completedTeams = Math.max(0, (selectedGroup?.events.length ?? 0) - pendingTeams.length)
   const selectedTeam = selectedGroup?.events.find((event) => event.id === teamId) ?? null
   const teamPeople = selectedTeam ? live.participants.filter((person) => person.eventId === selectedTeam.id) : []
   const selectedPerson = teamPeople.find((person) => person.id === participantId) ?? null
@@ -88,7 +90,7 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
   const gameDescription = getGameDescription(selectedPerson, selectedGame)
 
   const choices: WheelChoice[] = stage === "team"
-    ? (selectedGroup?.events ?? []).map((team) => ({ id: team.id, label: team.name }))
+    ? pendingTeams.map((team) => ({ id: team.id, label: team.name }))
     : stage === "person"
       ? teamPeople.map((person) => ({ id: person.id, label: person.username }))
       : games
@@ -106,6 +108,10 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
     setTeamId(null)
     setParticipantId(null)
     setGame(null)
+  }
+
+  function handleTeamConfirmed(eventId: string) {
+    if (eventId === teamId) reset()
   }
 
   async function confirmReset(password: string) {
@@ -155,25 +161,18 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
   const canPickGame = Boolean(selectedPerson && games.length)
   const currentResult = stage === "team" ? selectedTeam?.name : stage === "person" ? selectedPerson?.username : selectedGame?.label
 
-  // A roleta também funciona sem operador: sorteia equipe, pessoa e jogo,
-  // exibe o resultado por alguns segundos e reinicia sozinha.
+  // O automático avança somente dentro da sequência equipe → pessoa → jogo.
+  // Depois do jogo, aguarda o operador confirmar o retorno do cassino.
   useEffect(() => {
     if (sceneMode !== "roulette" || tab !== "ao-vivo" || !autoPlayRoulette || spinning) return
     let next: Stage | null = null
     if (stage === "team" && selectedTeam) next = teamPeople.length > 1 ? "person" : "game"
     else if (stage === "person" && selectedPerson) next = "game"
     if (next === "game" && !canPickGame) next = null
-    if (!next && stage !== "game" && !selectedTeam && !selectedPerson) return
+    if (!next) return
     const timer = setTimeout(() => {
-      if (next) setStage(next)
-      else {
-        if (groups.length > 1) {
-          const index = groups.findIndex((group) => group.id === selectedGroup?.id)
-          setGroupId(groups[(index + 1) % groups.length].id)
-        }
-        reset()
-      }
-    }, next ? 3200 : 8500)
+      setStage(next)
+    }, 3200)
     return () => clearTimeout(timer)
   }, [sceneMode, tab, autoPlayRoulette, spinning, stage, selectedTeam?.id, selectedPerson?.id, selectedGame?.id, selectedGroup?.id, groups, teamPeople.length, canPickGame])
 
@@ -220,6 +219,10 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
                 {groups.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}
               </select>
             </label>}
+            {selectedGroup && <div className="mb-4 flex flex-wrap justify-center gap-2 text-xs">
+              <span className="rounded-full bg-amber-400/10 px-3 py-1.5 font-bold text-amber-300 ring-1 ring-amber-400/30">{pendingTeams.length} pendente(s)</span>
+              <span className="rounded-full bg-emerald-400/10 px-3 py-1.5 font-bold text-emerald-300 ring-1 ring-emerald-400/30">{completedTeams} concluída(s)</span>
+            </div>}
             <div className="mb-6 flex flex-wrap justify-center gap-2">
               <Step number={1} label="Equipes" active={stage === "team"} disabled={spinning} onClick={() => setStage("team")} />
               <Step number={2} label="Pessoas" active={stage === "person"} disabled={spinning || teamPeople.length < 2} onClick={() => setStage("person")} />
@@ -232,14 +235,16 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
                 <p className="mt-3 text-xs font-bold tracking-[0.2em] text-amber-400 uppercase">Sorteado: {stage === "team" ? "equipe" : stage === "person" ? "pessoa" : "jogo"}</p>
                 <p className="mt-1 break-words text-2xl font-extrabold">{currentResult}</p>
                 {stage === "game" && gameDescription && gameDescription !== selectedGame?.label && <p className="mt-2 break-words text-sm text-muted-foreground">{gameDescription}</p>}
-              </> : <p className="text-sm text-muted-foreground">{stage === "team" ? "Sorteie uma das equipes com participantes." : stage === "person" ? "Sorteie uma das pessoas da equipe." : "Sorteie um jogo entre os campos públicos da pessoa."}</p>}
+              </> : <p className="text-sm text-muted-foreground">{stage === "team" ? pendingTeams.length ? "Sorteie uma das equipes pendentes." : "Rodada concluída: todas as equipes têm valor confirmado." : stage === "person" ? "Sorteie uma das pessoas da equipe." : "Sorteie um jogo entre os campos públicos da pessoa."}</p>}
               {nextStage && <button type="button" onClick={() => setStage(nextStage)} disabled={spinning || nextStage === "game" && !canPickGame} className="mt-4 rounded-xl bg-primary px-5 py-2 text-sm font-bold text-primary-foreground disabled:opacity-40">
                 {nextStage === "person" ? "Agora sortear pessoa" : "Agora sortear jogo"}
               </button>}
+              {stage === "game" && selectedGame && <p className="mt-4 text-xs font-semibold text-amber-300">Agora informe e confirme o retorno da equipe no placar ao lado. Ela sairá da próxima roleta.</p>}
+              {selectedTeam && selectedPerson && !games.length && <button type="button" onClick={reset} disabled={spinning} className="mt-4 rounded-xl bg-primary px-5 py-2 text-sm font-bold text-primary-foreground disabled:opacity-40">Voltar às equipes pendentes</button>}
               {selectedPerson && !games.length && <p className="mt-3 text-xs text-muted-foreground">Essa pessoa não tem jogos ou campos públicos disponíveis para sortear.</p>}
             </div>
           </div>
-          <div className="live-secondary"><LiveSidebar groups={groups} participants={live.participants} groupId={selectedGroup?.id ?? null} draft={poolDraft} onGroupChange={chooseGroup} onDraftChange={updateDraft} />
+          <div className="live-secondary"><LiveSidebar groups={groups} participants={live.participants} groupId={selectedGroup?.id ?? null} currentTeamId={teamId} draft={poolDraft} onGroupChange={chooseGroup} onDraftChange={updateDraft} onTeamConfirmed={handleTeamConfirmed} />
           <div className="rounded-3xl border border-border bg-card/60 p-6 backdrop-blur">
             <p className="text-xs font-semibold tracking-[0.3em] text-accent uppercase">Ordem do sorteio</p>
             <h2 className="mt-1 text-2xl font-bold">Equipe · pessoa · jogo</h2>
@@ -261,7 +266,7 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
             </>}
             {selectedTeam && <p className="mt-5 text-xs text-muted-foreground">Pessoas disponíveis na equipe: {teamPeople.length}. Pode voltar a uma etapa e girar novamente.</p>}
           </div></div>
-        </section> : <div className="live-play-grid" id="fila"><AnimatedScenes live={live} mode={sceneMode} onVillageResult={handleVillageResult} /><LiveSidebar groups={groups} participants={live.participants} groupId={selectedGroup?.id ?? null} draft={poolDraft} onGroupChange={chooseGroup} onDraftChange={updateDraft} /></div>}
+        </section> : <div className="live-play-grid" id="fila"><AnimatedScenes live={live} mode={sceneMode} onVillageResult={handleVillageResult} /><LiveSidebar groups={groups} participants={live.participants} groupId={selectedGroup?.id ?? null} currentTeamId={teamId} draft={poolDraft} onGroupChange={chooseGroup} onDraftChange={updateDraft} onTeamConfirmed={handleTeamConfirmed} /></div>}
       </>) : <Ranking participants={live.participants} battleGroups={live.battleGroups} />}
       <footer className="mt-2 border-t border-border pt-5 text-xs text-muted-foreground">18+ | Jogue com responsabilidade! · Atualização automática a cada 10 minutos</footer>
       <PasswordDialog

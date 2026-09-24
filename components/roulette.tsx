@@ -93,14 +93,15 @@ export function Roulette({
   }
 
   function spin() {
-    if (spinning || !choices.length) return
+    if (spinning || landedId || !choices.length) return
     const snapshot = [...choices]
     setSpinChoices(snapshot)
     setLandedId(null)
     setSpinning(true)
     onSpinningChange?.(true)
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    const effectiveDuration = reducedMotion ? 200 : DURATION
+    // A roleta é parte da transmissão: mantém o suspense mesmo quando o sistema
+    // operacional está configurado para reduzir animações.
+    const effectiveDuration = DURATION
     setDuration(effectiveDuration)
 
     const random = new Uint32Array(1)
@@ -108,16 +109,16 @@ export function Roulette({
     const selectedIndex = Math.floor((random[0] / 2 ** 32) * snapshot.length)
     const center = (selectedIndex + 0.5) * 360 / snapshot.length
     const base = rotationRef.current - ((rotationRef.current % 360) + 360) % 360
-    let target = base - center + 360 * (reducedMotion ? 1 : 8)
+    let target = base - center + 360 * 8
     if (target <= rotationRef.current) target += 360
     rotationRef.current = target
     setRotation(target)
-    if (!reducedMotion) ballRotationRef.current -= 360 * 11
+    ballRotationRef.current -= 360 * 11
     setBallRotation(ballRotationRef.current)
 
     tickCount.current = 0
     tick()
-    if (!reducedMotion) tickTimer.current = setInterval(tick, sound === "casino" ? 155 : 105)
+    tickTimer.current = setInterval(tick, sound === "casino" ? 155 : 105)
     finishTimer.current = setTimeout(() => {
       if (tickTimer.current) clearInterval(tickTimer.current)
       setSpinning(false)
@@ -181,8 +182,8 @@ export function Roulette({
           <div className="h-8 w-6 bg-amber-300 [clip-path:polygon(0_0,100%_0,50%_100%)]" />
         </div>
       </div>
-      <button type="button" onClick={spin} disabled={spinning || !choices.length} className="mt-3 rounded-full bg-gradient-to-r from-amber-500 via-rose-600 to-rose-700 px-8 py-3 text-sm font-black text-white shadow-lg shadow-red-900/40 transition hover:scale-105 hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50">
-        {spinning ? "Girando..." : !choices.length ? "Sem opções para sortear" : buttonLabel}
+      <button type="button" onClick={spin} disabled={spinning || Boolean(landedId) || !choices.length} className="mt-3 rounded-full bg-gradient-to-r from-amber-500 via-rose-600 to-rose-700 px-8 py-3 text-sm font-black text-white shadow-lg shadow-red-900/40 transition hover:scale-105 hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50">
+        {spinning ? "Girando..." : landedId ? "Resultado definido" : !choices.length ? "Rodada concluída" : buttonLabel}
       </button>
       <details className="mt-3 w-full max-w-[340px] rounded-xl border border-border bg-background/40 px-3 py-2 text-xs text-muted-foreground">
         <summary className="flex cursor-pointer items-center gap-2 font-semibold"><CircleHelp className="size-3.5" /> {visible.length} opções na mesa · ver nomes</summary>

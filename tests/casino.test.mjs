@@ -10,7 +10,7 @@ import react from "@vitejs/plugin-react"
 import { makeTestLiveData } from "./fixtures/live-many-teams.mjs"
 import { makeActors, sceneTeams } from "../lib/scene-model.ts"
 import { getGameDescription, getPublicGameChoices } from "../lib/roulette-games.ts"
-import { getPoolPreview } from "../lib/pool-preview.ts"
+import { getPoolPreview, isReturnConfirmed } from "../lib/pool-preview.ts"
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const live = makeTestLiveData()
@@ -83,7 +83,37 @@ test("placar aplica 15% e divide pelo número de bilhetes da equipe marcada", ()
   assert.equal(pool.winningTickets, 10)
   assert.equal(pool.perTicket, 42.5)
   assert.equal(pool.entries, 800)
+  assert.equal(pool.completedCount, 1)
+  assert.equal(pool.pendingCount, group.events.length - 1)
+  assert.equal(pool.resultLeader?.event.id, group.events[0].id)
   assert.equal(getPoolPreview(group, live.participants, {}).perTicket, 0)
+})
+
+test("equipe só deixa a roleta depois da confirmação do retorno", () => {
+  const group = live.battleGroups[0]
+  const event = group.events[0]
+  const unconfirmed = { [group.id]: { winnerId: "", casinoReturns: { [event.id]: "900,00" }, confirmedReturns: { [event.id]: false } } }
+  assert.equal(isReturnConfirmed(unconfirmed, group.id, event.id), false)
+  assert.equal(getPoolPreview(group, live.participants, unconfirmed).gross, 0)
+  const confirmed = { [group.id]: { ...unconfirmed[group.id], confirmedReturns: { [event.id]: true } } }
+  assert.equal(isReturnConfirmed(confirmed, group.id, event.id), true)
+  assert.equal(getPoolPreview(group, live.participants, confirmed).gross, 900)
+})
+
+test("placar ordena resultados confirmados e detecta empate", () => {
+  const group = live.battleGroups[0]
+  const [first, second] = group.events
+  const draft = { [group.id]: {
+    winnerId: "",
+    casinoReturns: { [first.id]: "354,00", [second.id]: "900,00" },
+    confirmedReturns: { [first.id]: true, [second.id]: true },
+  } }
+  const pool = getPoolPreview(group, live.participants, draft)
+  assert.equal(pool.resultLeader?.event.id, second.id)
+  assert.equal(pool.resultLeader?.amount, 900)
+  assert.equal(pool.isTie, false)
+  const tied = { [group.id]: { ...draft[group.id], casinoReturns: { [first.id]: "900,00", [second.id]: "900,00" } } }
+  assert.equal(getPoolPreview(group, live.participants, tied).isTie, true)
 })
 
 test("interface real comporta todos os times sem renderizar dados sensíveis", async () => {
@@ -122,7 +152,9 @@ test("interface real comporta todos os times sem renderizar dados sensíveis", a
     assert.match(sidebar, /R\$[\s\u00a0]42,50/)
     assert.doesNotMatch(sidebar, /SEM PATROCÍNIO ATIVO/)
     assert.doesNotMatch(sidebar, /Enviar imagem do patrocinador/)
-    assert.match(sidebar, /Finalizar e salvar rinha/)
+    assert.match(sidebar, /LÍDER DA RODADA/)
+    assert.match(sidebar, /Reabrir/)
+    assert.match(sidebar, /Faltam 3 equipe\(s\)/)
     assert.equal((sidebar.match(/Retorno do cassino para/g) ?? []).length, group.events.length)
     assert.doesNotMatch(sidebar, /SEGREDO-SENSIVEL|DOCUMENTO-SIMULADO/)
   } finally {

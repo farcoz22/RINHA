@@ -76,6 +76,10 @@ export function PoolCalculator({
           ...(current[groupId]?.casinoReturns ?? {}),
           [eventId]: value,
         },
+        confirmedReturns: {
+          ...(current[groupId]?.confirmedReturns ?? {}),
+          [eventId]: false,
+        },
       },
     }))
   }
@@ -86,6 +90,7 @@ export function PoolCalculator({
       [groupId]: {
         winnerId: eventId,
         casinoReturns: current[groupId]?.casinoReturns ?? {},
+        confirmedReturns: current[groupId]?.confirmedReturns,
       },
     }))
   }
