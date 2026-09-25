@@ -124,6 +124,22 @@ test("campo de jogo sem flag continua público, mas marcação sensível e dados
   assert.equal(fieldIsSensitive({ label: "CPF", value: "000.000.000-00" }, []), true)
 })
 
+test("reconhece campos escritos como jogo número 1 e jogo número 2", () => {
+  const participant = {
+    id: "rotulo-numero", username: "nuuh", message: null, amount: 2, quantity: 1,
+    eventId: "time-6", eventName: "TIME DOS RICOS 6", groupName: "Copa", createdAt: new Date().toISOString(),
+    fields: [
+      { label: "Nome na twitch", value: "nuuh", sensitive: false },
+      { label: "jogo número 1", value: "banana farm", sensitive: false },
+      { label: "jogo número 2", value: "spinman", sensitive: false },
+    ],
+  }
+  const choices = getPublicGameChoices(participant)
+  assert.deepEqual(choices.map((choice) => choice.label), ["Jogo 1", "Jogo 2"])
+  assert.equal(getGameDescription(participant, choices[0]), "banana farm")
+  assert.equal(getGameDescription(participant, choices[1]), "spinman")
+})
+
 test("interface real comporta todos os times sem renderizar dados sensíveis", async () => {
   const server = await createServer({
     configFile: false, root,
