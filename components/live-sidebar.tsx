@@ -9,11 +9,12 @@ import { getConfirmationMap, getPoolPreview, parseMoney } from "@/lib/pool-previ
 import { formatBRL } from "@/lib/format"
 import { PasswordDialog } from "@/components/password-dialog"
 
-export function LiveSidebar({ groups, participants, groupId, currentTeamId, draft, onGroupChange, onDraftChange, onTeamConfirmed }: {
+export function LiveSidebar({ groups, participants, groupId, currentTeamId, drawnGames = {}, draft, onGroupChange, onDraftChange, onTeamConfirmed }: {
   groups: BattleGroup[]
   participants: Participant[]
   groupId: string | null
   currentTeamId?: string | null
+  drawnGames?: Record<string, string>
   draft: PoolDraft
   onGroupChange: (id: string) => void
   onDraftChange: (draft: PoolDraft) => void
@@ -160,12 +161,16 @@ export function LiveSidebar({ groups, participants, groupId, currentTeamId, draf
             const confirmed = result?.confirmed === true
             const playing = currentTeamId === event.id && !confirmed
             const leading = pool.resultLeader?.event.id === event.id && !pool.isTie
+            const drawnGame = drawnGames[event.id]
+            const resultUnlocked = confirmed || Boolean(drawnGame)
             return <div className={`live-scoreboard__event ${confirmed ? "live-scoreboard__event--completed" : ""} ${playing ? "live-scoreboard__event--playing" : ""} ${leading ? "live-scoreboard__event--winner" : ""}`} key={event.id}>
-              <div className="live-scoreboard__event-name"><b>{event.name} {leading ? "👑" : ""}</b><small>{playing ? "Jogando agora" : confirmed ? "Concluída" : `${event.occupiedEntries} bilhete(s)`} · {holders.map((person) => person.username).join(", ") || "Sem nomes"}</small></div>
-              <label><span className="sr-only">Retorno do cassino para {event.name}</span><span>R$</span><input inputMode="decimal" placeholder="0,00" disabled={confirmed} value={draft[group.id]?.casinoReturns[event.id] ?? ""} onChange={(change) => changeReturn(event.id, change.target.value)} /></label>
-              <button type="button" className={confirmed ? "live-scoreboard__reopen" : ""} disabled={!confirmed && parseMoney(draft[group.id]?.casinoReturns[event.id] ?? "") <= 0} onClick={() => confirmed ? reopenReturn(event.id) : confirmReturn(event.id)}>
-                {confirmed ? <><RotateCcw className="size-3" /> Reabrir</> : <><Check className="size-3" /> Confirmar</>}
-              </button>
+              <div className="live-scoreboard__event-name"><b>{event.name} {leading ? "👑" : ""}</b><small>{playing ? "Jogando agora" : confirmed ? "Concluída" : `${event.occupiedEntries} bilhete(s)`} · {holders.map((person) => person.username).join(", ") || "Sem nomes"}{drawnGame ? ` · ${drawnGame}` : ""}</small></div>
+              {resultUnlocked ? <>
+                <label><span className="sr-only">Retorno do cassino para {event.name}</span><span>R$</span><input inputMode="decimal" placeholder="0,00" disabled={confirmed} value={draft[group.id]?.casinoReturns[event.id] ?? ""} onChange={(change) => changeReturn(event.id, change.target.value)} /></label>
+                <button type="button" className={confirmed ? "live-scoreboard__reopen" : ""} disabled={!confirmed && parseMoney(draft[group.id]?.casinoReturns[event.id] ?? "") <= 0} onClick={() => confirmed ? reopenReturn(event.id) : confirmReturn(event.id)}>
+                  {confirmed ? <><RotateCcw className="size-3" /> Reabrir</> : <><Check className="size-3" /> Confirmar</>}
+                </button>
+              </> : <div className="col-span-2 rounded-md border border-dashed border-slate-600 px-2 py-1.5 text-center text-[9px] font-bold text-slate-400">Sorteie o jogo para liberar o resultado</div>}
             </div>
           })}
           </div>

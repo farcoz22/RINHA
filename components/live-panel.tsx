@@ -19,6 +19,7 @@ import { PasswordDialog } from "@/components/password-dialog"
 const fetcher = (url: string) => fetch(url).then((response) => response.json() as Promise<LiveData>)
 type Stage = "team" | "person" | "game"
 type Tab = "ao-vivo" | "fila"
+const DRAWN_GAMES_KEY = "rinha-drawn-games-v1"
 
 export function LivePanel({ initialData }: { initialData: LiveData }) {
   const { data, mutate, isValidating } = useSWR<LiveData>("/api/live", fetcher, {
@@ -33,6 +34,8 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
   const [sceneMode, setSceneMode] = useState<SceneMode>("roulette")
   const [autoPlayRoulette, setAutoPlayRoulette] = useState(false)
   const [poolDraft, setPoolDraft] = useState<PoolDraft>({})
+  const [drawnGames, setDrawnGames] = useState<Record<string, string>>({})
+  const [skippedTeamIds, setSkippedTeamIds] = useState<string[]>([])
   useEffect(() => {
     const saved = window.localStorage.getItem("rinha-scene-mode")
     if (saved === "neighborhood" || saved === "arena" || saved === "roulette" || saved === "squad") setSceneMode(saved)
@@ -40,6 +43,8 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
     try {
       const saved = window.localStorage.getItem("rhyno-pool-calculator")
       if (saved) setPoolDraft(JSON.parse(saved) as PoolDraft)
+      const savedDrawnGames = window.localStorage.getItem(DRAWN_GAMES_KEY)
+      if (savedDrawnGames) setDrawnGames(JSON.parse(savedDrawnGames) as Record<string, string>)
     } catch { /* A live continua mesmo sem acesso ao armazenamento local. */ }
     const onPoolChange = (event: Event) => setPoolDraft((event as CustomEvent<PoolDraft>).detail)
     window.addEventListener("rhyno-pool-draft-change", onPoolChange)
@@ -81,6 +86,7 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
 
   const selectedGroup = groups.find((group) => group.id === groupId) ?? groups[0] ?? null
   const pendingTeams = selectedGroup?.events.filter((event) => !isReturnConfirmed(poolDraft, selectedGroup.id, event.id)) ?? []
+  const rouletteTeams = pendingTeams.filter((event) => !skippedTeamIds.includes(event.id))
   const completedTeams = Math.max(0, (selectedGroup?.events.length ?? 0) - pendingTeams.length)
   const selectedTeam = selectedGroup?.events.find((event) => event.id === teamId) ?? null
   const teamPeople = selectedTeam ? live.participants.filter((person) => person.eventId === selectedTeam.id) : []
@@ -90,7 +96,7 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
   const gameDescription = getGameDescription(selectedPerson, selectedGame)
 
   const choices: WheelChoice[] = stage === "team"
-    ? pendingTeams.map((team) => ({ id: team.id, label: team.name }))
+    ? rouletteTeams.map((team) => ({ id: team.id, label: team.name }))
     : stage === "person"
       ? teamPeople.map((person) => ({ id: person.id, label: person.username }))
       : games
@@ -110,6 +116,30 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
     setGame(null)
   }
 
+  function saveDrawnGame(eventId: string, gameLabel: string) {
+    setDrawnGames((current) => {
+      const next = { ...current, [eventId]: gameLabel }
+      try { window.localStorage.setItem(DRAWN_GAMES_KEY, JSON.stringify(next)) } catch { /* Continua sem persistência local. */ }
+      return next
+    })
+  }
+
+  function forgetDrawnGame(eventId: string | null) {
+    if (!eventId) return
+    setDrawnGames((current) => {
+      const next = { ...current }
+      delete next[eventId]
+      try { window.localStorage.setItem(DRAWN_GAMES_KEY, JSON.stringify(next)) } catch { /* Continua sem persistência local. */ }
+      return next
+    })
+  }
+
+  function skipCurrentTeam() {
+    if (!teamId) return
+    setSkippedTeamIds((current) => current.includes(teamId) ? current : [...current, teamId])
+    reset()
+  }
+
   function handleTeamConfirmed(eventId: string) {
     if (eventId === teamId) reset()
   }
@@ -124,6 +154,7 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
       })
       const result = (await response.json()) as { ok?: boolean; error?: string }
       if (!response.ok || !result.ok) throw new Error(result.error ?? "Senha incorreta")
+      forgetDrawnGame(teamId)
       reset()
       setResetDialogOpen(false)
     } catch (error) {
@@ -136,14 +167,14 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
   function handleSelected(choice: WheelChoice) {
     if (stage === "team") {
       setTeamId(choice.id)
-      const people = live.participants.filter((person) => person.eventId === choice.id)
-      setParticipantId(people.length === 1 ? people[0].id : null)
+      setParticipantId(null)
       setGame(null)
     } else if (stage === "person") {
       setParticipantId(choice.id)
       setGame(null)
     } else {
       setGame(choice)
+      if (selectedTeam) saveDrawnGame(selectedTeam.id, choice.label)
     }
   }
 
@@ -153,10 +184,11 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
     setParticipantId(result.personId)
     setGame(result.game)
     setStage("game")
+    saveDrawnGame(result.teamId, result.game.label)
   }
 
   const nextStage: Stage | null = stage === "team" && selectedTeam
-    ? teamPeople.length > 1 ? "person" : selectedPerson ? "game" : null
+    ? teamPeople.length > 0 ? "person" : null
     : stage === "person" && selectedPerson ? "game" : null
   const canPickGame = Boolean(selectedPerson && games.length)
   const currentResult = stage === "team" ? selectedTeam?.name : stage === "person" ? selectedPerson?.username : selectedGame?.label
@@ -166,7 +198,7 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
   useEffect(() => {
     if (sceneMode !== "roulette" || tab !== "ao-vivo" || !autoPlayRoulette || spinning) return
     let next: Stage | null = null
-    if (stage === "team" && selectedTeam) next = teamPeople.length > 1 ? "person" : "game"
+    if (stage === "team" && selectedTeam) next = teamPeople.length > 0 ? "person" : null
     else if (stage === "person" && selectedPerson) next = "game"
     if (next === "game" && !canPickGame) next = null
     if (!next) return
@@ -225,7 +257,7 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
             </div>}
             <div className="mb-6 flex flex-wrap justify-center gap-2">
               <Step number={1} label="Equipes" active={stage === "team"} disabled={spinning} onClick={() => setStage("team")} />
-              <Step number={2} label="Pessoas" active={stage === "person"} disabled={spinning || teamPeople.length < 2} onClick={() => setStage("person")} />
+              <Step number={2} label="Pessoas" active={stage === "person"} disabled={spinning || !selectedTeam || teamPeople.length === 0} onClick={() => setStage("person")} />
               <Step number={3} label="Jogos" active={stage === "game"} disabled={spinning || !canPickGame} onClick={() => setStage("game")} />
             </div>
             <Roulette key={`${selectedGroup?.id ?? "none"}-${stage}-${stage === "team" ? "" : teamId}-${stage === "game" ? participantId : ""}`} choices={choices} onSelected={handleSelected} onSpinningChange={setSpinning} buttonLabel={labels[stage]} sound={sound} onSoundChange={setSound} autoSpin={autoPlayRoulette} />
@@ -235,16 +267,17 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
                 <p className="mt-3 text-xs font-bold tracking-[0.2em] text-amber-400 uppercase">Sorteado: {stage === "team" ? "equipe" : stage === "person" ? "pessoa" : "jogo"}</p>
                 <p className="mt-1 break-words text-2xl font-extrabold">{currentResult}</p>
                 {stage === "game" && gameDescription && gameDescription !== selectedGame?.label && <p className="mt-2 break-words text-sm text-muted-foreground">{gameDescription}</p>}
-              </> : <p className="text-sm text-muted-foreground">{stage === "team" ? pendingTeams.length ? "Sorteie uma das equipes pendentes." : "Rodada concluída: todas as equipes têm valor confirmado." : stage === "person" ? "Sorteie uma das pessoas da equipe." : "Sorteie um jogo entre os campos públicos da pessoa."}</p>}
+              </> : <p className="text-sm text-muted-foreground">{stage === "team" ? rouletteTeams.length ? "Sorteie uma das equipes pendentes." : pendingTeams.length ? "As equipes restantes não possuem jogo público disponível." : "Rodada concluída: todas as equipes têm valor confirmado." : stage === "person" ? "Sorteie uma das pessoas da equipe." : "Sorteie um jogo entre os campos públicos da pessoa."}</p>}
               {nextStage && <button type="button" onClick={() => setStage(nextStage)} disabled={spinning || nextStage === "game" && !canPickGame} className="mt-4 rounded-xl bg-primary px-5 py-2 text-sm font-bold text-primary-foreground disabled:opacity-40">
                 {nextStage === "person" ? "Agora sortear pessoa" : "Agora sortear jogo"}
               </button>}
               {stage === "game" && selectedGame && <p className="mt-4 text-xs font-semibold text-amber-300">Agora informe e confirme o retorno da equipe no placar ao lado. Ela sairá da próxima roleta.</p>}
-              {selectedTeam && selectedPerson && !games.length && <button type="button" onClick={reset} disabled={spinning} className="mt-4 rounded-xl bg-primary px-5 py-2 text-sm font-bold text-primary-foreground disabled:opacity-40">Voltar às equipes pendentes</button>}
-              {selectedPerson && !games.length && <p className="mt-3 text-xs text-muted-foreground">Essa pessoa não tem jogos ou campos públicos disponíveis para sortear.</p>}
+              {selectedTeam && selectedPerson && !games.length && <button type="button" onClick={skipCurrentTeam} disabled={spinning} className="mt-4 rounded-xl bg-primary px-5 py-2 text-sm font-bold text-primary-foreground disabled:opacity-40">Equipe sem jogo público · sortear próxima</button>}
+              {stage === "team" && !rouletteTeams.length && pendingTeams.length > 0 && <button type="button" onClick={() => setSkippedTeamIds([])} disabled={spinning} className="mt-4 rounded-xl bg-primary px-5 py-2 text-sm font-bold text-primary-foreground disabled:opacity-40">Recolocar equipes sem jogo</button>}
+              {selectedPerson && !games.length && <p className="mt-3 text-xs text-muted-foreground">Nenhum campo de jogo público foi encontrado. Campos realmente marcados como sensíveis continuam ocultos.</p>}
             </div>
           </div>
-          <div className="live-secondary"><LiveSidebar groups={groups} participants={live.participants} groupId={selectedGroup?.id ?? null} currentTeamId={teamId} draft={poolDraft} onGroupChange={chooseGroup} onDraftChange={updateDraft} onTeamConfirmed={handleTeamConfirmed} />
+          <div className="live-secondary"><LiveSidebar groups={groups} participants={live.participants} groupId={selectedGroup?.id ?? null} currentTeamId={teamId} drawnGames={drawnGames} draft={poolDraft} onGroupChange={chooseGroup} onDraftChange={updateDraft} onTeamConfirmed={handleTeamConfirmed} />
           <div className="rounded-3xl border border-border bg-card/60 p-6 backdrop-blur">
             <p className="text-xs font-semibold tracking-[0.3em] text-accent uppercase">Ordem do sorteio</p>
             <h2 className="mt-1 text-2xl font-bold">Equipe · pessoa · jogo</h2>
@@ -266,7 +299,7 @@ export function LivePanel({ initialData }: { initialData: LiveData }) {
             </>}
             {selectedTeam && <p className="mt-5 text-xs text-muted-foreground">Pessoas disponíveis na equipe: {teamPeople.length}. Pode voltar a uma etapa e girar novamente.</p>}
           </div></div>
-        </section> : <div className="live-play-grid" id="fila"><AnimatedScenes live={live} mode={sceneMode} onVillageResult={handleVillageResult} /><LiveSidebar groups={groups} participants={live.participants} groupId={selectedGroup?.id ?? null} currentTeamId={teamId} draft={poolDraft} onGroupChange={chooseGroup} onDraftChange={updateDraft} onTeamConfirmed={handleTeamConfirmed} /></div>}
+        </section> : <div className="live-play-grid" id="fila"><AnimatedScenes live={live} mode={sceneMode} onVillageResult={handleVillageResult} /><LiveSidebar groups={groups} participants={live.participants} groupId={selectedGroup?.id ?? null} currentTeamId={teamId} drawnGames={drawnGames} draft={poolDraft} onGroupChange={chooseGroup} onDraftChange={updateDraft} onTeamConfirmed={handleTeamConfirmed} /></div>}
       </>) : <Ranking participants={live.participants} battleGroups={live.battleGroups} />}
       <footer className="mt-2 border-t border-border pt-5 text-xs text-muted-foreground">18+ | Jogue com responsabilidade! · Atualização automática a cada 10 minutos</footer>
       <PasswordDialog

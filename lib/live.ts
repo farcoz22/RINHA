@@ -1,7 +1,7 @@
 import "server-only"
 import { getQueueEventDetail, listDonations, listQueueEvents } from "@/lib/rhyno"
-import type { QueueEntryFieldValue, QueueField } from "@/lib/rhyno"
 import type { BattleGroup, LiveData, Participant, RecentDonation } from "@/lib/types"
+import { fieldIsSensitive } from "@/lib/field-sensitivity"
 
 /**
  * Cache em memória compartilhado entre o SSR e a rota /api/live.
@@ -44,30 +44,6 @@ export async function getPublicLiveData(): Promise<LiveData> {
       fields: participant.fields.filter((field) => field.sensitive === false),
     })),
   }
-}
-
-function sensitivityFlag(value: unknown): boolean | null {
-  if (value === true || value === 1) return true
-  if (value === false || value === 0) return false
-  if (typeof value === "string") {
-    const flag = value.trim().toLowerCase()
-    if (flag === "true" || flag === "1") return true
-    if (flag === "false" || flag === "0") return false
-  }
-  return null
-}
-
-function fieldIsSensitive(value: QueueEntryFieldValue, definitions: QueueField[]): boolean {
-  const definition = definitions.find((field) => field.label === value.label)
-  const flags = [
-    sensitivityFlag(value.sensitive),
-    sensitivityFlag(value.isSensitive),
-    sensitivityFlag(definition?.sensitive),
-    sensitivityFlag(definition?.isSensitive),
-  ]
-  // Um campo só é público quando a API indica explicitamente isso;
-  // qualquer marcação sensível tem prioridade sobre uma marcação pública.
-  return flags.includes(true) || !flags.includes(false)
 }
 
 async function buildLiveData(): Promise<LiveData> {

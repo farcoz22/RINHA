@@ -11,6 +11,7 @@ import { makeTestLiveData } from "./fixtures/live-many-teams.mjs"
 import { makeActors, sceneTeams } from "../lib/scene-model.ts"
 import { getGameDescription, getPublicGameChoices } from "../lib/roulette-games.ts"
 import { getPoolPreview, isReturnConfirmed } from "../lib/pool-preview.ts"
+import { fieldIsSensitive } from "../lib/field-sensitivity.ts"
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const live = makeTestLiveData()
@@ -117,6 +118,12 @@ test("placar ordena resultados confirmados e detecta empate", () => {
   assert.equal(getPoolPreview(group, live.participants, tied).isTie, true)
 })
 
+test("campo de jogo sem flag continua público, mas marcação sensível e dados pessoais ficam ocultos", () => {
+  assert.equal(fieldIsSensitive({ label: "Jogo 1", value: "Ascent" }, []), false)
+  assert.equal(fieldIsSensitive({ label: "Jogo 2", value: "Bind", sensitive: true }, []), true)
+  assert.equal(fieldIsSensitive({ label: "CPF", value: "000.000.000-00" }, []), true)
+})
+
 test("interface real comporta todos os times sem renderizar dados sensíveis", async () => {
   const server = await createServer({
     configFile: false, root,
@@ -156,7 +163,8 @@ test("interface real comporta todos os times sem renderizar dados sensíveis", a
     assert.match(sidebar, /LÍDER DA RODADA/)
     assert.match(sidebar, /Reabrir/)
     assert.match(sidebar, /Faltam 3 equipe\(s\)/)
-    assert.equal((sidebar.match(/Retorno do cassino para/g) ?? []).length, group.events.length)
+    assert.equal((sidebar.match(/Retorno do cassino para/g) ?? []).length, 1)
+    assert.equal((sidebar.match(/Sorteie o jogo para liberar o resultado/g) ?? []).length, group.events.length - 1)
     assert.doesNotMatch(sidebar, /SEGREDO-SENSIVEL|DOCUMENTO-SIMULADO/)
   } finally {
     await server.close()
