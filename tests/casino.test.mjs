@@ -118,10 +118,11 @@ test("placar ordena resultados confirmados e detecta empate", () => {
   assert.equal(getPoolPreview(group, live.participants, tied).isTie, true)
 })
 
-test("campo de jogo sem flag continua público, mas marcação sensível e dados pessoais ficam ocultos", () => {
+test("somente a marcação sensível oculta o campo, independentemente do nome", () => {
   assert.equal(fieldIsSensitive({ label: "Jogo 1", value: "Ascent" }, []), false)
   assert.equal(fieldIsSensitive({ label: "Jogo 2", value: "Bind", sensitive: true }, []), true)
-  assert.equal(fieldIsSensitive({ label: "CPF", value: "000.000.000-00" }, []), true)
+  assert.equal(fieldIsSensitive({ label: "CPF", value: "000.000.000-00" }, []), false)
+  assert.equal(fieldIsSensitive({ label: "Qualquer nome", value: "oculto", isSensitive: "true" }, []), true)
 })
 
 test("reconhece campos escritos como jogo número 1 e jogo número 2", () => {

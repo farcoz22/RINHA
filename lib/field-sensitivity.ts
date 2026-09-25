@@ -19,9 +19,8 @@ export function fieldIsSensitive(value: QueueEntryFieldValue, definitions: Queue
     sensitivityFlag(definition?.sensitive),
     sensitivityFlag(definition?.isSensitive),
   ]
-  const personalDataLabel = /(?:cpf|rg|documento|e-?mail|telefone|celular|whats(?:app)?|endere[cç]o|chave\s*pix|pix|senha|password)/i
 
-  if (personalDataLabel.test(value.label)) return true
-  if (flags.includes(true)) return true
-  return false
+  // A configuração feita na Rhyno é a fonte de verdade. O texto do campo
+  // nunca decide sua visibilidade; somente uma marcação sensível o oculta.
+  return flags.includes(true)
 }
