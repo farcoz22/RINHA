@@ -11,30 +11,46 @@ function getGameDetail(label: string) {
   return label.replace(GAME_FIELD_PATTERN, "").replace(/^\s*[-:–]?\s*/, "").trim()
 }
 
-/** Agrupa os campos Jogo 1 / Jogo 2 em opções e ignora tudo marcado como sensível. */
-export function getPublicGameChoices(participant: Participant | null): WheelChoice[] {
+function isIdentityField(label: string) {
+  return /(?:nome|nick|nickname|usu[aá]rio).*twitch|twitch.*(?:nome|nick|nickname|usu[aá]rio)/i.test(label)
+}
+
+function getPublicGames(participant: Participant | null) {
   if (!participant) return []
-  const games = new Map<string, string[]>()
-  for (const field of participant.fields) {
-    if (field.sensitive !== false || !field.value?.trim()) continue
+  const games = new Map<string, { id: string; label: string; lines: string[] }>()
+
+  participant.fields.forEach((field, index) => {
+    if (field.sensitive !== false || !field.value?.trim() || isIdentityField(field.label)) return
+    const value = field.value.trim()
     const gameNumber = getGameNumber(field.label)
-    // Nome de usuário, CPF e outros campos públicos não são opções de jogo.
-    if (!gameNumber) continue
-    const key = `Jogo ${gameNumber}`
-    const detail = getGameDetail(field.label)
-    games.set(key, [...(games.get(key) ?? []), detail ? `${detail}: ${field.value.trim()}` : field.value.trim()])
-  }
-  return [...games].map(([label], index) => ({ id: String(index), label }))
+
+    if (gameNumber) {
+      const id = `number:${gameNumber}`
+      const detail = getGameDetail(field.label)
+      const current = games.get(id) ?? { id, label: `Jogo ${gameNumber}`, lines: [] }
+      current.lines.push(detail ? `${detail}: ${value}` : value)
+      games.set(id, current)
+      return
+    }
+
+    // O nome do campo é livre na Rhyno. Qualquer outro campo público entra
+    // como opção própria; somente a marcação sensível o remove do sorteio.
+    const id = `field:${index}`
+    games.set(id, { id, label: value, lines: [`${field.label}: ${value}`] })
+  })
+
+  return [...games.values()]
+}
+
+/** Agrupa campos numerados quando possível e nunca descarta um campo público por causa do nome. */
+export function getPublicGameChoices(participant: Participant | null): WheelChoice[] {
+  return getPublicGames(participant).map(({ id, label }) => ({ id, label }))
 }
 
 export function getGameDescription(participant: Participant | null, game: WheelChoice | null) {
   if (!participant || !game) return null
-  const publicFields = participant.fields.filter((field) => field.sensitive === false && field.value?.trim())
-  const match = game.label.match(/^Jogo (\d+)$/)
-  if (!match) return null
-  const matches = publicFields.filter((field) => getGameNumber(field.label) === match[1])
-  return matches.map((field) => {
-    const label = getGameDetail(field.label)
-    return label ? `${label}: ${field.value.trim()}` : field.value.trim()
-  }).join(" · ")
+  const selected = getPublicGames(participant).find((item) => item.id === game.id)
+  if (!selected) return null
+  const description = selected.lines.join(" · ")
+  return description === game.label ? null : description
 }

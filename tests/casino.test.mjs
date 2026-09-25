@@ -140,6 +140,23 @@ test("reconhece campos escritos como jogo número 1 e jogo número 2", () => {
   assert.equal(getGameDescription(participant, choices[1]), "spinman")
 })
 
+test("inclui campos públicos com nomes livres e ignora somente identificação e sensíveis", () => {
+  const participant = {
+    id: "rotulos-livres", username: "nuuh", message: null, amount: 2, quantity: 1,
+    eventId: "time-livre", eventName: "TIME LIVRE", groupName: "Copa", createdAt: new Date().toISOString(),
+    fields: [
+      { label: "Nome na twitch", value: "nuuh", sensitive: false },
+      { label: "Primeira escolha", value: "banana farm", sensitive: false },
+      { label: "O que jogar depois?", value: "spinman", sensitive: false },
+      { label: "Escolha secreta", value: "não mostrar", sensitive: true },
+    ],
+  }
+  const choices = getPublicGameChoices(participant)
+  assert.deepEqual(choices.map((choice) => choice.label), ["banana farm", "spinman"])
+  assert.equal(getGameDescription(participant, choices[0]), "Primeira escolha: banana farm")
+  assert.equal(getGameDescription(participant, choices[1]), "O que jogar depois?: spinman")
+})
+
 test("interface real comporta todos os times sem renderizar dados sensíveis", async () => {
   const server = await createServer({
     configFile: false, root,
